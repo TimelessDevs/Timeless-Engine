@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with TexturePacker https://www.codeandweb.com/texturepacker -->
+<!-- $TexturePacker:SmartUpdate:567cac90cef9cdb30287a20387af304b:d792c915248f23334ab907aa264dbad7:d62569d0f44f7b17ea6282c18c1d7ff7$ -->
+<TextureAtlas imagePath="LogoBumpin.png/logoBumpin.png" width="616" height="432">
+    <SubTexture name="logo bumpin0000" x="1" y="1" width="614" height="430" frameX="-92" frameY="-25" frameWidth="761" frameHeight="484"/>
+    <SubTexture name="logo bumpin0001" x="1" y="1" width="614" height="430" frameX="-92" frameY="-25" frameWidth="761" frameHeight="484"/>
+    <SubTexture name="logo bumpin0002" x="1" y="1" width="614" height="430" frameX="-92" frameY="-25" frameWidth="761" frameHeight="484"/>
+    <SubTexture name="logo bumpin0003" x="1" y="1" width="614" height="430" frameX="-92" frameY="-25" frameWidth="761" frameHeight="484"/>
+</TextureAtlas>
