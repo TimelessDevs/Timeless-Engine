@@ -414,7 +414,7 @@ class PauseSubState extends MusicBeatSubstate
 						}
 						
 						#if mobile
-						var sub = new mobile.objects.TouchControlsSubState();
+						var sub = new mobile.options.MobileOptionsSubState();
 						#else
 						var sub = new options.ControlsSubState();
 						#end
@@ -433,12 +433,13 @@ class PauseSubState extends MusicBeatSubstate
 					} catch(e:Dynamic) {
 						states.PlayState.instance.catchScriptError("Controls visibility override failed: " + Std.string(e));
 					}
-
 				case 'Console':
 				#if mobile
 				close();
-				if (states.PlayState.instance != null && states.PlayState.instance.timelessConsole != null) {
-					states.PlayState.instance.timelessConsole.toggleConsoleOverlayVisibility();
+				@:privateAccess {
+					if (states.PlayState.instance != null && states.PlayState.instance.timelessConsole != null) {
+						states.PlayState.instance.timelessConsole.toggleConsoleOverlayVisibility();
+					}
 				}
 				#end
 
