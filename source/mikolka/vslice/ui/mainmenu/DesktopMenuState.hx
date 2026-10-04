@@ -5,6 +5,13 @@ import options.OptionsState;
 import flixel.FlxBasic;
 import flixel.effects.FlxFlicker;
 import mikolka.vslice.ui.title.TitleState;
+import flixel.FlxSprite;
+import flixel.group.FlxGroup.FlxTypedGroup;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+import flixel.text.FlxText;
+import flixel.util.FlxColor;
+
 #if !LEGACY_PSYCH
 #if MODS_ALLOWED
 import states.ModsMenuState;
@@ -17,6 +24,14 @@ import editors.MasterEditorMenu;
 #end
 import mikolka.compatibility.VsliceOptions;
 import flixel.FlxObject;
+
+import flixel.FlxG;
+import flixel.group.FlxGroup.FlxTypedGroup;
+import backend.Paths;
+import backend.CoolUtil;
+import backend.MusicBeatState;
+import backend.ClientPrefs;
+import flixel.addons.transition.FlxTransitionableState;
 
 @:access(mikolka.vslice.ui.MainMenuState)
 class DesktopMenuState extends FlxBasic
@@ -32,22 +47,23 @@ class DesktopMenuState extends FlxBasic
 	];
 
 	public static var curSelected:Int = 0;
-    var selectedSomethin:Bool = false;
+	var selectedSomethin:Bool = false;
 	var menuItems:FlxTypedGroup<FlxSprite>;
 	var camFollow:FlxObject;
-    
-    var host:MainMenuState;
-    public function new(host:MainMenuState) {
-        super();
-        this.host = host;
-        host.add(this);
+	
+	var host:MainMenuState;
+
+	public function new(host:MainMenuState) {
+		super();
+		this.host = host;
+		host.add(this);
 
 		var yScroll:Float = Math.max(0.25 - (0.05 * (optionShit.length - 4)), 0.1);
 		host.bg.scrollFactor.set(0, yScroll);
 		host.bg.updateHitbox();
 		host.bg.screenCenter();
 
-        host.magenta.scrollFactor.set(0, yScroll);
+		host.magenta.scrollFactor.set(0, yScroll);
 		host.magenta.updateHitbox();
 		host.magenta.screenCenter();
 
@@ -57,32 +73,104 @@ class DesktopMenuState extends FlxBasic
 		menuItems = new FlxTypedGroup<FlxSprite>();
 		host.add(menuItems);
 
+		var debugText:FlxText = new FlxText(40, 40, 0, "", 28);
+		debugText.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, "left", FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		if (mikolka.vslice.ui.MainMenuState.globalLayoutMatrix != null) {
+			debugText.text = "";
+			debugText.color = 0xFF00FF66;
+		} else {
+			debugText.text = "";
+			debugText.color = 0xFFFF0033;
+		}
+		debugText.scrollFactor.set(0, 0);
+		host.add(debugText);
+
+		var matrix:mikolka.vslice.ui.MainMenuState.MenuLayoutData = mikolka.vslice.ui.MainMenuState.globalLayoutMatrix;
+
 		for (i in 0...optionShit.length)
 		{
-			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
-			var menuItem:FlxSprite = new FlxSprite(0, (i * 140) + offset);
-			menuItem.antialiasing = VsliceOptions.ANTIALIASING;
-			menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
-			menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
-			menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
-			menuItem.animation.play('idle');
-			menuItems.add(menuItem);
-			var scr:Float = (optionShit.length - 4) * 0.135;
-			if (optionShit.length < 6)
-				scr = 0;
-			menuItem.scrollFactor.set(0, scr);
-			menuItem.updateHitbox();
-			menuItem.screenCenter(X);
+			var menuItem:FlxSprite;
+			var checkName:String = (optionShit[i] == 'donate') ? 'merch' : optionShit[i];
+			var customProps:Dynamic = null;
+
+			if (matrix != null && matrix.items != null) {
+				for (prop in matrix.items) {
+					if (prop.name == checkName) {
+						customProps = prop;
+						break;
+					}
+				}
+			}
+
+			if (customProps != null) 
+			{
+				menuItem = new FlxSprite(customProps.x, customProps.y);
+				menuItem.antialiasing = VsliceOptions.ANTIALIASING;
+				menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
+				menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
+				menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
+				menuItem.animation.play('idle');
+				menuItems.add(menuItem);
+
+				menuItem.scrollFactor.set(0, 0);
+				
+				menuItem.scale.set(customProps.scaleX * matrix.globalScale, customProps.scaleY * matrix.globalScale);
+				menuItem.updateHitbox();
+			} 
+			else 
+			{
+				var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
+				var defaultY:Float = (i * 140) + offset;
+
+				menuItem = new FlxSprite(0, defaultY);
+				menuItem.antialiasing = VsliceOptions.ANTIALIASING;
+				menuItem.frames = Paths.getSparrowAtlas('mainmenu/menu_' + optionShit[i]);
+				menuItem.animation.addByPrefix('idle', optionShit[i] + " basic", 24);
+				menuItem.animation.addByPrefix('selected', optionShit[i] + " white", 24);
+				menuItem.animation.play('idle');
+				menuItems.add(menuItem);
+				
+				var scr:Float = (optionShit.length - 4) * 0.135;
+				if (optionShit.length < 6)
+					scr = 0;
+				menuItem.scrollFactor.set(0, scr);
+				menuItem.updateHitbox();
+				menuItem.screenCenter(X);
+			}
 		}
 
 		FlxG.camera.follow(camFollow, null, 0.06);
-        changeItem();
+		changeItem();
 
 		#if TOUCH_CONTROLS_ALLOWED
 		host.addTouchPad('UP_DOWN', 'A_B');
 		#end
-    }
+	}
 
+	private function applyLayoutOrFallback(item:FlxSprite, name:String, index:Int):Void
+	{
+		var matrix:mikolka.vslice.ui.MainMenuState.MenuLayoutData = mikolka.vslice.ui.MainMenuState.globalLayoutMatrix;
+		var checkName:String = (name == 'donate') ? 'merch' : name;
+		var hasCustom:Bool = false;
+
+		if (matrix != null && matrix.items != null) {
+			for (prop in matrix.items) {
+				if (prop.name.toLowerCase().trim() == checkName.toLowerCase().trim()) {
+					item.x = prop.x;
+					item.y = prop.y;
+					hasCustom = true;
+					break;
+				}
+			}
+		}
+
+		if (!hasCustom) {
+			var offset:Float = 108 - (Math.max(optionShit.length, 4) - 4) * 80;
+			item.x = 0;
+			item.y = (index * 140) + offset;
+			item.screenCenter(X);
+		}
+	}
 
 	override function update(elapsed:Float)
 	{
@@ -108,7 +196,7 @@ class DesktopMenuState extends FlxBasic
 				FlxTransitionableState.skipNextTransOut = false;
 				if (optionShit[curSelected] == 'donate')
 				{
-					CoolUtil.browserLoad('https://needlejuicerecords.com/pages/friday-night-funkin');
+					CoolUtil.browserLoad('https://needlejuicerecords.com');
 				}
 				else
 				{
@@ -127,7 +215,6 @@ class DesktopMenuState extends FlxBasic
 								{
 									host.persistentDraw = true;
 									host.persistentUpdate = false;
-									// Freeplay has its own custom transition
 									FlxTransitionableState.skipNextTransIn = true;
 									FlxTransitionableState.skipNextTransOut = true;
 
@@ -193,9 +280,11 @@ class DesktopMenuState extends FlxBasic
 	{
 		if (huh != 0)
 			FlxG.sound.play(Paths.sound('scrollMenu'));
+			
 		menuItems.members[curSelected].animation.play('idle');
 		menuItems.members[curSelected].updateHitbox();
-		menuItems.members[curSelected].screenCenter(X);
+		
+		applyLayoutOrFallback(menuItems.members[curSelected], optionShit[curSelected], curSelected);
 
 		curSelected += huh;
 
@@ -206,7 +295,8 @@ class DesktopMenuState extends FlxBasic
 
 		menuItems.members[curSelected].animation.play('selected');
 		menuItems.members[curSelected].centerOffsets();
-		menuItems.members[curSelected].screenCenter(X);
+		
+		applyLayoutOrFallback(menuItems.members[curSelected], optionShit[curSelected], curSelected);
 
 		camFollow.setPosition(menuItems.members[curSelected].getGraphicMidpoint().x,
 			menuItems.members[curSelected].getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));

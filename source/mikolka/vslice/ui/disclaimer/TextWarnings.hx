@@ -9,10 +9,10 @@ class OutdatedState extends WarningState
 		final bro:String = #if mobile 'kiddo' #else 'bro' #end;
 		final escape:String = (controls.mobileC) ? 'B' : 'ESCAPE';
 
-		var guh = "Sup "+bro+", looks like you're running an   \n
+		var guh = "Hi "+bro+", looks like you're running an   \n
 		outdated version of Timeless Engine (" + MainMenuState.pSliceVersion + "),\n
 		please update to " + newVersion + "!\n
-		Press "+escape+" to proceed anyway.\n
+		Press "+ escape +" to proceed anyway.\n
 		\n
 		Thank you for using the Engine!";
 		super(guh,() ->{

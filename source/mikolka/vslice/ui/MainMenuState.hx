@@ -36,6 +36,9 @@ class MainMenuState extends MusicBeatState
 	public static var funkinVersion:String = '0.7.6';
 
 	var bg:FlxSprite;
+
+	public static var globalLayoutMatrix:MenuLayoutData = null;
+
 	var magenta:FlxSprite;
 
 	var stickerSubState:Bool;
@@ -50,10 +53,10 @@ class MainMenuState extends MusicBeatState
 
 	private function loadTimelessMenuLayout():MenuLayoutData
 	{
-		// Перестроено под жесткую иерархию папок menulayouts
 		var pathsToScan:Array<String> = [
 			'assets/shared/menulayouts/menu_layout.json',
-			'mods/' + backend.Mods.currentModDirectory + '/menulayouts/menu_layout.json'
+			'mods/' + backend.Mods.currentModDirectory + '/menulayouts/menu_layout.json',
+			'mods/menulayouts/menu_layout.json'
 		];
 
 		var validPath:String = "";
@@ -64,17 +67,33 @@ class MainMenuState extends MusicBeatState
 			}
 		}
 
+		var debugCheckText:flixel.text.FlxText = new flixel.text.FlxText(20, 20, 0, "", 24);
+		debugCheckText.setFormat(backend.Paths.font("vcr.ttf"), 24, flixel.util.FlxColor.WHITE, "left", flixel.text.FlxTextBorderStyle.OUTLINE, flixel.util.FlxColor.BLACK);
+		debugCheckText.scrollFactor.set();
+
 		if (validPath != "") {
+			debugCheckText.text = "";
+			debugCheckText.color = 0xFF00FF66;
+			add(debugCheckText);
+
 			try {
 				var content:String = sys.io.File.getContent(validPath);
 				var parsedData:MenuLayoutData = haxe.Json.parse(content);
+				
+				globalLayoutMatrix = parsedData;
+				
 				trace("[LAYOUT SUCCESS]: Loaded matrix path -> " + validPath);
 				return parsedData;
 			} catch(e:Dynamic) {
 				trace("[LAYOUT CRASH]: Path structural metadata error: " + validPath + " -> " + Std.string(e));
 			}
+		} else {
+			debugCheckText.text = "";
+			debugCheckText.color = 0xFFFF0033; // Красный
+			add(debugCheckText);
 		}
 
+		globalLayoutMatrix = null;
 		return null;
 	}
 
@@ -142,41 +161,10 @@ class MainMenuState extends MusicBeatState
 		#end
 		#end
 
-		// Вызываем наш структурированный метод поиска разметки
-		var layout:MenuLayoutData = loadTimelessMenuLayout();
-
-		if (layout != null) {
-			var localButtons:Array<String> = ['story_mode', 'freeplay', 'mods', 'credits', 'options'];
-
-			if (members != null) {
-				for (member in members) {
-					if (member != null && Std.isOfType(member, flixel.FlxSprite)) {
-						var item:flixel.FlxSprite = cast member;
-						
-						if (item.graphic != null && item.graphic.key != null) {
-							var key:String = item.graphic.key.toLowerCase();
-							for (buttonName in localButtons) {
-								if (key.indexOf('menu_' + buttonName) != -1) {
-									// Перебираем элементы внутри загруженного пакета MenuLayoutData
-									for (prop in layout.items) {
-										if (prop.name == buttonName) {
-											item.x = prop.x;
-											item.y = prop.y;
-											
-											item.scale.set(prop.scaleX * layout.globalScale, prop.scaleY * layout.globalScale);
-											item.updateHitbox();
-											break;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+		loadTimelessMenuLayout();
 
 		super.create();
+
 		#if TOUCH_CONTROLS_ALLOWED
 		if (controls.mobileC)
 			new mobile.states.MobileMenuState(this);

@@ -157,13 +157,29 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 				refreshHistoryLogBuffer();
 			}
 			else {
+				var keyCode:Int = flixel.FlxG.keys.firstJustPressed();
 				var rawKey:String = flixel.input.keyboard.FlxKey.toStringMap.get(keyCode);
+				
 				if (rawKey != null) {
 					if (rawKey == "SPACE") consoleInput += " ";
 					else if (rawKey == "PERIOD" || rawKey == "NUMPADPERIOD") consoleInput += ".";
 					else if (rawKey == "MINUS" || rawKey == "NUMPADMINUS") consoleInput += "-";
-					else if (rawKey.startsWith("NUMPAD") && rawKey.length > 6) {
-						consoleInput += rawKey.substring(6);
+					
+					else if (rawKey.startsWith("NUMPAD")) {
+						var numpadValue:String = rawKey.substring(6).toUpperCase();
+						switch (numpadValue) {
+							case "ZERO": consoleInput += "0";
+							case "ONE": consoleInput += "1";
+							case "TWO": consoleInput += "2";
+							case "THREE": consoleInput += "3";
+							case "FOUR": consoleInput += "4";
+							case "FIVE": consoleInput += "5";
+							case "SIX": consoleInput += "6";
+							case "SEVEN": consoleInput += "7";
+							case "EIGHT": consoleInput += "8";
+							case "NINE": consoleInput += "9";
+							default:
+						}
 					}
 					else if (rawKey.startsWith("DIGIT") && rawKey.length > 5) {
 						consoleInput += rawKey.substring(5);
@@ -218,24 +234,24 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 				case "botplay" | "bot":
 					parentState.cpuControlled = parseState(parentState.cpuControlled, val1);
 					@:privateAccess if (parentState.botplayTxt != null) parentState.botplayTxt.visible = parentState.cpuControlled;
-					consoleHistory.push("[OK]: Autopilot state: " + (parentState.cpuControlled ? "ENABLED" : "DISABLED"));
+					consoleHistory.push("[OK]: Botplay " + (parentState.cpuControlled ? "ENABLED" : "DISABLED"));
 
 				case "practice":
 					parentState.practiceMode = parseState(parentState.practiceMode, val1);
-					consoleHistory.push("[OK]: Practice buffer safe mode: " + (parentState.practiceMode ? "ENABLED" : "DISABLED"));
+					consoleHistory.push("[OK]: Practice mode: " + (parentState.practiceMode ? "ENABLED" : "DISABLED"));
 
 				case "ghost" | "ghosttapping":
 					backend.ClientPrefs.data.ghostTapping = parseState(backend.ClientPrefs.data.ghostTapping, val1);
-					consoleHistory.push("[OK]: Ghost note tap processing: " + (backend.ClientPrefs.data.ghostTapping ? "ENABLED" : "DISABLED"));
+					consoleHistory.push("[OK]: Ghost note tapping: " + (backend.ClientPrefs.data.ghostTapping ? "ENABLED" : "DISABLED"));
 
 				case "nsd" | "nosuddendeath":
 					@:privateAccess parentState.healthLoss = 0;
-					consoleHistory.push("[OK]: Sudden death locks dissolved safely.");
+					consoleHistory.push("[OK]: Sudden death locks dissolved.");
 
 				case "score":
 					var num = Std.parseInt(val1);
 					if (!Math.isNaN(num)) { @:privateAccess parentState.songScore = num; parentState.updateScore(); }
-					consoleHistory.push("[OK]: Dynamic tally score score overridden.");
+					consoleHistory.push("[OK]: Score overriden");
 
 				case "misses" | "miss":
 					var num = Std.parseInt(val1);
@@ -258,11 +274,11 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 						consoleHistory.push("[OK]: Global note lane velocity locked at: " + num);
 					}
 
-				case "timescale":
+				case "timescale" | "playback" | "playbackrate":
 					var num = Std.parseFloat(val1);
 					if (!Math.isNaN(num) && num > 0) {
 						flixel.FlxG.timeScale = num;
-						consoleHistory.push("[OK]: Timeline delta tick matrix scaled to: " + num + "x");
+						consoleHistory.push("[OK]: Playback rate is now " + num + "x");
 					}
 
 				case "skip" | "time":
@@ -277,40 +293,40 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 					}
 
 				case "chart" | "editor":
-					consoleHistory.push("[SYSTEM]: Instantly bootstrapping custom charting workspace grid...");
+					consoleHistory.push("[SYSTEM]: Bootstrapping chart editor...");
 					isActive = false; this.visible = false;
 					backend.MusicBeatState.switchState(new states.editors.ChartingState());
 
 				case "mute":
 					var target = val1.toLowerCase();
-					if (target == "vocals" || target == "v") { if (parentState.vocals != null) parentState.vocals.volume = 0; }
-					else if (target == "inst" || target == "i") { if (FlxG.sound.music != null) FlxG.sound.music.volume = 0; }
-					consoleHistory.push("[OK]: Muted selected audio branch array: " + target);
+					if (target == "vocals" || target == "v" || target == "voices") { if (parentState.vocals != null) parentState.vocals.volume = 0; }
+					else if (target == "inst" || target == "i" || target == "music") { if (FlxG.sound.music != null) FlxG.sound.music.volume = 0; }
+					consoleHistory.push("[OK]: Muted selected audio: " + target);
 
 				case "unmute":
 					if (parentState.vocals != null) parentState.vocals.volume = 1;
 					if (FlxG.sound.music != null) FlxG.sound.music.volume = 1;
-					consoleHistory.push("[OK]: All audio channels restored to full scale.");
+					consoleHistory.push("[OK]: Unmuted all channels");
 
 				case "volume":
 					var num = Std.parseFloat(val1);
 					if (!Math.isNaN(num)) flixel.FlxG.sound.volume = FlxMath.bound(num, 0, 1);
-					consoleHistory.push("[OK]: Hardware master volume level forced.");
+					consoleHistory.push("[OK]: Volume changed.");
 
 				case "exit" | "quit":
-					consoleHistory.push("[SYSTEM]: Halting game context. Tearing down arrays...");
+					consoleHistory.push("[SYSTEM]: Qutting the song...");
 					backend.MusicBeatState.switchState(new mikolka.vslice.ui.MainMenuState());
 
 				case "crash":
-					consoleHistory.push("[SYSTEM]: Forcefully triggering hard memory exception routine error...");
-					throw new openfl.errors.Error("Forced debug command exception crash execution mapping.");
+					consoleHistory.push("[SYSTEM]: Crashing...");
+					throw new openfl.errors.Error("Crashing...");
 
 				case "shader":
 					#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 					var activeCamera:String = (val2 != "") ? val2 : "camGame";
 					backend.ShaderDirector.loadShaderFromFile(val1, backend.Mods.currentModDirectory);
 					backend.ShaderDirector.applyShaderToCamera(val1, activeCamera, parentState);
-					consoleHistory.push("[OK]: Bound GLSL filter asset '" + val1 + "' over -> " + activeCamera);
+					consoleHistory.push("[OK]: Asset '" + val1 + "' over -> " + activeCamera);
 					#end
 
 				case "bgalpha" | "stagealpha":
@@ -324,7 +340,7 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 					}
 					consoleHistory.push("[OK]: Static layout visibility adjusted.");
 
-				case "bghide":
+				case "bghide" | "hidebg":
 					@:privateAccess {
 						for (sprite in parentState.members) {
 							if (sprite != parentState.boyfriendGroup && sprite != parentState.dadGroup && sprite != parentState.gfGroup && Std.isOfType(sprite, flixel.FlxSprite)) {
@@ -332,9 +348,9 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 							}
 						}
 					}
-					consoleHistory.push("[OK]: Stage sprites unlinked from screen drawing thread.");
+					consoleHistory.push("[OK]: Unrendered the stage.");
 
-				case "bgshow":
+				case "bgshow" | "showbg":
 					@:privateAccess {
 						for (sprite in parentState.members) {
 							if (sprite != parentState.boyfriendGroup && sprite != parentState.dadGroup && sprite != parentState.gfGroup && Std.isOfType(sprite, flixel.FlxSprite)) {
@@ -342,15 +358,15 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 							}
 						}
 					}
-					consoleHistory.push("[OK]: Stage rendering visibility layers restored.");
+					consoleHistory.push("[OK]: Rendered the stage.");
 
 				case "bfflip":
 					if (parentState.boyfriend != null) parentState.boyfriend.flipX = !parentState.boyfriend.flipX;
-					consoleHistory.push("[OK]: Boyfriend horizontal orientation flipped.");
+					consoleHistory.push("[OK]: Player flipped. ");
 
 				case "dadflip":
 					if (parentState.dad != null) parentState.dad.flipX = !parentState.dad.flipX;
-					consoleHistory.push("[OK]: Opponent horizontal orientation flipped.");
+					consoleHistory.push("[OK]: Opponent flipped.");
 
 				case "camzoom":
 					var num = Std.parseFloat(val1);
@@ -367,7 +383,7 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 
 				case "downscroll":
 					backend.ClientPrefs.data.downScroll = parseState(backend.ClientPrefs.data.downScroll, val1);
-					consoleHistory.push("[OK]: DownScroll layout configuration: " + (backend.ClientPrefs.data.downScroll ? "ENABLED" : "DISABLED"));
+					consoleHistory.push("[OK]: DownScroll " + (backend.ClientPrefs.data.downScroll ? "ENABLED" : "DISABLED"));
 
 				case "middlescroll":
 					backend.ClientPrefs.data.middleScroll = parseState(backend.ClientPrefs.data.middleScroll, val1);
@@ -384,10 +400,10 @@ class TimelessConsole extends flixel.group.FlxSpriteGroup
 					consoleHistory = ["[SYSTEM]: Log history buffer cleared."];
 
 				default:
-					consoleHistory.push("[ERROR]: Unrecognized instruction identifier '" + primaryCommand + "'. Type 'help'.");
+					consoleHistory.push("[ERROR]: Unknown command '" + primaryCommand + "'. Type 'help'.");
 			}
 		} catch(e:Dynamic) {
-			consoleHistory.push("[CRASH]: Operation layout execution crash -> " + Std.string(e));
+			consoleHistory.push("[CRASH]: Operation  execution crash -> " + Std.string(e));
 		}
 	}
 }

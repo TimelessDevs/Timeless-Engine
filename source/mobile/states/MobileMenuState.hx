@@ -1,5 +1,6 @@
 package mobile.states;
 
+import flixel.FlxG;
 import flixel.effects.FlxFlicker;
 import mikolka.vslice.freeplay.FreeplayState;
 import mikolka.vslice.ui.title.TitleState;
@@ -8,6 +9,9 @@ import mobile.objects.GridButtons;
 import flixel.FlxBasic;
 import mikolka.compatibility.VsliceOptions;
 import mobile.objects.grid.*;
+import flixel.text.FlxText;
+import flixel.util.FlxColor;
+
 #if !LEGACY_PSYCH
 #if MODS_ALLOWED
 import states.ModsMenuState;
@@ -18,91 +22,109 @@ import states.editors.MasterEditorMenu;
 #else
 import editors.MasterEditorMenu;
 #end
+import flixel.addons.transition.FlxTransitionableState;
 
 @:access(mikolka.vslice.ui.MainMenuState)
 class MobileMenuState extends FlxBasic {
     var selectedSomethin:Bool = false;
     
-	
     var host:MainMenuState;
 	var grid:GridButtons;
+
     public function new(host:MainMenuState) {
         super();
         this.host = host;
         host.add(this);
 		
-        grid = new GridButtons((MobileScaleMode.gameCutoutSize.x/4)+30, 20, 2,Math.floor((MobileScaleMode.gameCutoutSize.x/4)+750));
+        grid = new GridButtons((MobileScaleMode.gameCutoutSize.x/4)+30, 20, 2, Math.floor((MobileScaleMode.gameCutoutSize.x/4)+750));
 		host.add(grid);
-		grid.onItemSelect.add(s ->{
+		grid.onItemSelect.add(s -> {
 			FlxG.sound.play(Paths.sound('confirmMenu'));
-				FlxTransitionableState.skipNextTransIn = false;
-				FlxTransitionableState.skipNextTransOut = false;
-				selectedSomethin = true;
+			FlxTransitionableState.skipNextTransIn = false;
+			FlxTransitionableState.skipNextTransOut = false;
+			selectedSomethin = true;
 
-				if (VsliceOptions.FLASHBANG)
-					FlxFlicker.flicker(host.magenta, 1.1, 0.15, false);
+			if (VsliceOptions.FLASHBANG)
+				FlxFlicker.flicker(host.magenta, 1.1, 0.15, false);
 		});
-		var storyBtn = grid.makeButton('story_mode', 0, () ->
-		{
+
+		var debugText:FlxText = new FlxText(40, 40, 0, "", 28);
+		debugText.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, "left", FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		if (mikolka.vslice.ui.MainMenuState.globalLayoutMatrix != null) {
+			debugText.text = "";
+			debugText.color = 0xFF00FF66;
+		} else {
+			debugText.text = "";
+			debugText.color = 0xFFFF0033;
+		}
+		debugText.scrollFactor.set(0, 0);
+		host.add(debugText);
+
+		var storyBtn = grid.makeButton('story_mode', 0, () -> {
 			FlxG.mouse.visible = false;
 			MusicBeatState.switchState(new StoryMenuState());
 		});
-		storyBtn.selectedOffset.set(10,15);
+		storyBtn.selectedOffset.set(10, 15);
+		applyMobileLayoutProperties(storyBtn, 'story_mode');
 
-		grid.makeButton('freeplay', 0, () ->
-		{
+		var freeplayBtn = grid.makeButton('freeplay', 0, () -> {
 			FlxG.mouse.visible = false;
 			host.persistentDraw = true;
 			host.persistentUpdate = false;
-			// Freeplay has its own custom transition
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
 
 			host.openSubState(new FreeplayState());
-			host.subStateOpened.addOnce(state ->
-			{
+			host.subStateOpened.addOnce(state -> {
 				grid.revealButtons();
 				selectedSomethin = false;
 				grid.selectButton();
 			});
-			if(!host.controls.mobileC) host.subStateClosed.addOnce((x) ->{
+			if(!host.controls.mobileC) host.subStateClosed.addOnce((x) -> {
 				FlxG.mouse.visible = true;
 			});
-		}).selectedOffset.set(10,20);
+		});
+		freeplayBtn.selectedOffset.set(10, 20);
+		applyMobileLayoutProperties(freeplayBtn, 'freeplay');
+
 		#if MODS_ALLOWED
-		grid.makeButton('mods', 0, () ->
-		{
+		var modsBtn = grid.makeButton('mods', 0, () -> {
 			FlxG.mouse.visible = false;
 			MusicBeatState.switchState(new ModsMenuState());
 		});
-		#end
-		#if ACHIEVEMENTS_ALLOWED
-		grid.makeButton('awards', 1, () ->
-		{
-			FlxG.mouse.visible = false;
-			MusicBeatState.switchState(new AchievementsMenuState());
-		}).selectedOffset.set(70,15);
+		applyMobileLayoutProperties(modsBtn, 'mods');
 		#end
 
-		grid.makeButton('credits', 1, () ->
-		{
+		#if ACHIEVEMENTS_ALLOWED
+		var awardsBtn = grid.makeButton('awards', 1, () -> {
+			FlxG.mouse.visible = false;
+			MusicBeatState.switchState(new AchievementsMenuState());
+		});
+		awardsBtn.selectedOffset.set(70, 15);
+		applyMobileLayoutProperties(awardsBtn, 'awards');
+		#end
+
+		var creditsBtn = grid.makeButton('credits', 1, () -> {
 			FlxG.mouse.visible = false;
 			MusicBeatState.switchState(new CreditsState());
-		}).selectedOffset.set(150,10);
+		});
+		creditsBtn.selectedOffset.set(150, 10);
+		applyMobileLayoutProperties(creditsBtn, 'credits');
 
 		#if !switch
 		var donateBtn = new GridTileDonate(grid);
 		grid.addButton(donateBtn, 1);
-		donateBtn.selectedOffset.set(30,0);
+		donateBtn.selectedOffset.set(30, 0);
+		applyMobileLayoutProperties(donateBtn, 'merch');
 		#end
 
-		var optionsBtn = new OptionsButton(grid,() ->
-		{
+		var optionsBtn = new OptionsButton(grid, () -> {
 			FlxG.mouse.visible = false;
             host.goToOptions();
 		});
-		grid.addButton(optionsBtn,0);
+		grid.addButton(optionsBtn, 0);
 		optionsBtn.setPosition((MobileScaleMode.gameCutoutSize.x/4)+35, FlxG.height - 200);
+		applyMobileLayoutProperties(optionsBtn, 'options');
 
         #if TOUCH_CONTROLS_ALLOWED
 		host.addTouchPad('NONE', 'B_C');
@@ -113,6 +135,28 @@ class MobileMenuState extends FlxBasic {
 			grid.selectButton();
 		}
     }
+
+	private function applyMobileLayoutProperties(btn:flixel.FlxSprite, name:String):Void
+	{
+		var matrix:mikolka.vslice.ui.MainMenuState.MenuLayoutData = mikolka.vslice.ui.MainMenuState.globalLayoutMatrix;
+		var checkName:String = name.toLowerCase().trim();
+		var hasCustomLayout:Bool = false;
+
+		if (matrix != null && matrix.items != null) {
+			for (prop in matrix.items) {
+				var jsonName:String = prop.name.toLowerCase().trim();
+				if (jsonName == checkName) {
+					btn.x = prop.x;
+					btn.y = prop.y;
+					btn.scale.set(prop.scaleX * matrix.globalScale, prop.scaleY * matrix.globalScale);
+					btn.updateHitbox();
+					btn.scrollFactor.set(0, 0);
+					hasCustomLayout = true;
+					break;
+				}
+			}
+		}
+	}
 
     override function update(elapsed:Float) {
         if (!selectedSomethin)
