@@ -31,8 +31,7 @@ class Mods
 		'states',
 		'scripts',
 		'achievements',
-		'menulayouts',
-		'previews'
+		'menulayouts'
 	];
 
 	private static var globalMods:Array<String> = [];

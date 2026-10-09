@@ -10,7 +10,7 @@ class OutdatedState extends WarningState
 		final escape:String = (controls.mobileC) ? 'B' : 'ESCAPE';
 
 		var guh = "Hi "+bro+", looks like you're running an   \n
-		outdated version of Timeless Engine (" + MainMenuState.pSliceVersion + "),\n
+		outdated version of Timeless Engine (" + MainMenuState.TimelessEngineVersion + "),\n
 		please update to " + newVersion + "!\n
 		Press "+ escape +" to proceed anyway.\n
 		\n

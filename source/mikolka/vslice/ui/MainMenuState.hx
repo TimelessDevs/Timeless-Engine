@@ -32,7 +32,7 @@ class MainMenuState extends MusicBeatState
 	#else
 	public static var psychEngineVersion:String = '0.0.4';
 	#end
-	public static var pSliceVersion:String = '0.0.4';
+	public static var TimelessEngineVersion:String = '0.0.4';
 	public static var funkinVersion:String = '0.7.6';
 
 	var bg:FlxSprite;
@@ -142,7 +142,7 @@ class MainMenuState extends MusicBeatState
 		add(magenta);
 
 		var psychVer:FlxText = new FlxText(0, FlxG.height - 18, FlxG.width, "Timeless Engine " + psychEngineVersion, 12);
-		var fnfVer:FlxText = new FlxText(0, FlxG.height - 18, FlxG.width, 'v${funkinVersion} (V-slice ${pSliceVersion})', 12);
+		var fnfVer:FlxText = new FlxText(0, FlxG.height - 18, FlxG.width, 'v${funkinVersion} (V-slice ${TimelessEngineVersion})', 12);
 
 		psychVer.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, RIGHT, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 

@@ -15,6 +15,6 @@ call lime build ios
 
 echo.
 echo ===================================================
-echo [Timeless Engine] Build successful or stopped.
+echo [Timeless Engine] ERROR
 echo ===================================================
 pause

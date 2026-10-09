@@ -14,7 +14,6 @@ class ShadersState extends backend.MusicBeatState
 {
 	public var attachedScript:String;
 	public var hscript:HScript = null;
-	
 	#if LUA_ALLOWED
 	public var luaArray:Array<psychlua.FunkinLua> = [];
 	#end

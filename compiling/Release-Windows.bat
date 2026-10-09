@@ -15,6 +15,6 @@ call lime build windows -32
 
 echo.
 echo ===================================================
-echo [Timeless Engine] Build successful or stopped.
+echo [Timeless Engine] ERROR
 echo ===================================================
 pause

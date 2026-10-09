@@ -11,10 +11,10 @@ echo.
 echo ===================================================
 echo [Timeless Engine] Compiling...
 echo ===================================================
-call lime test windows -32
+call lime test windows
 
 echo.
 echo ===================================================
-echo [Timeless Engine] ERROR.
+echo [Timeless Engine] ERROR
 echo ===================================================
 pause

@@ -35,6 +35,8 @@ import openfl.filters.ShaderFilter;
 import objects.VideoSprite;
 import objects.Note.EventNote;
 import objects.*;
+import timelesspython.TimePython;
+
 #if LUA_ALLOWED
 import psychlua.*;
 #else
@@ -54,7 +56,7 @@ import crowplexus.hscript.Printer;
  * here's some useful tips if you are making a mod in source:
  *
  * If you want to add your stage to the game, copy states/stages/Template.hx,
- * and put your stage code there, then, on PlayState, search for
+ * and put your stage code there, then, on PlayState,  search for
  * "switch (curStage)", and add your stage to that list.
  *
  * If you want to code Events, you can either code it on a Stage file or on PlayState, if you're doing the latter, search for:
@@ -89,6 +91,15 @@ class PlayState extends MusicBeatState
 	public var boyfriendMap:Map<String, Character> = new Map<String, Character>();
 	public var dadMap:Map<String, Character> = new Map<String, Character>();
 	public var gfMap:Map<String, Character> = new Map<String, Character>();
+
+	// python scripting
+	public var pythonArray:Array<timelesspython.TimePython> = [];
+
+	// javascript scripting (its now bugged, so if u want, please fix it)
+	//public var javascriptScripts:Array<backend.JavaScriptManager.TimelessJavaScriptScript> = [];
+
+	// csharp scripting via .net
+	public var csharpScripts:Array<backend.CSharpManager.TimelessCSharpScript> = [];
 
 	#if HSCRIPT_ALLOWED
 	public var hscriptArray:Array<HScript> = [];
@@ -471,8 +482,39 @@ class PlayState extends MusicBeatState
 			add(boyfriendGroup);
 		}
 
-		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		// "SCRIPTS FOLDER" SCRIPTS
+		#if cpp
+		var directoriesToScan:Array<String> = [
+			'mods/scripts/',
+			'assets/scripts/'
+		];
+		
+		if (backend.Mods.currentModDirectory != null && backend.Mods.currentModDirectory.trim().length > 0) {
+			directoriesToScan.insert(1, 'mods/' + backend.Mods.currentModDirectory + '/scripts/');
+		}
+
+		for (folder in directoriesToScan)
+		{
+			if (sys.FileSystem.exists(folder) && sys.FileSystem.isDirectory(folder))
+			{
+				for (file in sys.FileSystem.readDirectory(folder))
+				{
+					if (file.toLowerCase().endsWith('.py'))
+					{
+						var fullScriptPath:String = folder + file;
+						trace("[PYTHON LOADER]: Initializing Timeless Python core wrapper for -> " + fullScriptPath);
+						
+						var pyScript = new timelesspython.TimePython(fullScriptPath);
+						if (pyScript.result == false) { 
+							trace("[PYTHON SUCCESS]: Script fully bound via hxpy callback bridge: " + file);
+						}
+					}
+				}
+			}
+		}
+		#end
+
+		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
 			#if linux
 			for (file in CoolUtil.sortAlphabetically(NativeFileSystem.readDirectory(folder)))
@@ -666,13 +708,51 @@ class PlayState extends MusicBeatState
 				new FunkinLua(folder + file);
 			#end
 
+		//let me out
+		//	#if cpp
+		//	for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
+		//	{
+		//		for (file in sys.FileSystem.readDirectory(folder))
+		//		{
+		//			if (file.toLowerCase().endsWith('.js'))
+		//			{
+		//				var jsScript = new backend.JavaScriptManager.TimelessJavaScriptScript(folder + file);
+		//				if (jsScript.isLoaded)
+		//				{
+		//					javascriptScripts.push(jsScript);
+		//					jsScript.callFunction("onCreate", [songName]);
+		//				}
+		//			}
+		//		}
+		//	}
+		//	#end
+
+			//csharp thing
+			#if cpp
+			for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
+			{
+				for (file in sys.FileSystem.readDirectory(folder))
+				{
+					if (file.toLowerCase().endsWith('.cs'))
+					{
+						var csScript = new backend.CSharpManager.TimelessCSharpScript(folder + file);
+						if (csScript.isLoaded)
+						{
+							csharpScripts.push(csScript);
+							csScript.callFunction("onCreate", [songName]);
+						}
+					}
+				}
+			}
+			#end
+
 			#if HSCRIPT_ALLOWED
 			if (file.toLowerCase().endsWith('.hx'))
 				initHScript(folder + file);
 			#end
 		}
 		#end
-
+	
 		#if TOUCH_CONTROLS_ALLOWED
 		addHitbox();
 		hitbox.visible = true;
@@ -2325,15 +2405,6 @@ override public function update(elapsed:Float)
 		while (unspawnNotes.length > 0 && unspawnNotes[0].strumTime - Conductor.songPosition < time)
 		{
 			var dunceNote:Note = unspawnNotes[0];
-
-			if (boyfriend != null && (boyfriend.curCharacter == 'bf-pico1' || boyfriend.curCharacter == 'pico-4') && !dunceNote.spawned) {
-					if (dunceNote.noteType == 'Glitch Note' || dunceNote.noteType == 'Hurt Note') {
-							dunceNote.noteType = 'FakeGlitchNote'; 
-					} else if (dunceNote.noteType == '') {
-							dunceNote.noteType = 'FakeNote'; 
-					}
-			}
-			
 
 			notes.insert(0, dunceNote);
 			dunceNote.spawned = true;
@@ -4026,7 +4097,6 @@ public function goodNoteHit(note:Note):Void
 	if (result == LuaUtils.Function_Stop)
 		return;
 
-
 	note.wasGoodHit = true;
 			if (leType == 'Glitch Note') {
 			health -= 1.5;
@@ -4262,6 +4332,19 @@ override function stepHit()
 
 	lastStepHit = curStep;
 	setOnScripts('curStep', curStep);
+
+	for (py in pythonArray) {
+		py.call("onStepHit", [curStep]);
+	}
+
+	//for (js in javascriptScripts) {
+	//	js.callFunction("onBeatHit", [curBeat]);
+	//}
+
+	for (cs in csharpScripts) {
+		cs.callFunction("onBeatHit", [curBeat]);
+	}
+
 	callOnScripts('onStepHit');
 }
 
@@ -4296,6 +4379,15 @@ override function beatHit()
 	lastBeatHit = curBeat;
 
 	setOnScripts('curBeat', curBeat);
+
+	for (py in pythonArray) {
+		py.call("onBeatHit", [curBeat]);
+	}
+
+	//for (js in javascriptScripts) {
+	//	js.callFunction("onBeatHit", [curBeat]);
+	//}
+
 	callOnScripts('onBeatHit');
 }
 
@@ -4413,7 +4505,34 @@ public function initHScript(file:String)
 			newScript.set("ShaderDirector", backend.ShaderDirector);
 			newScript.set("FlxRuntimeShader", flixel.addons.display.FlxRuntimeShader);
 
+			//I LITERALLY ADDED F###### MULTI-LANGUAGE USPpORT IN HX FLIE FAHHHH
+
 			newScript.set("runLuaCode", runLuaCode);
+			
+			newScript.set("runPythonCode", function(code:String, funcName:String, ?args:Array<Dynamic>) {
+				trace("[BRIDGE]: Intercepting HScript-to-Python execution request...");
+				#if cpp
+				if (backend.PythonManager.isRuntimeActive) {
+					trace("[BRIDGE]: Submitting string injection sequence to Py runtime.");
+				}
+				#end
+			});
+
+			newScript.set("runCSharpCode", function(className:String, methodName:String, ?args:Array<Dynamic>) {
+				trace("[BRIDGE]: Intercepting HScript-to-C# invocation request...");
+				for (cs in csharpScripts) {
+					cs.callFunction(methodName, args);
+				}
+			});
+
+			newScript.set("runJavaCode", function(className:String, methodName:String, ?args:Array<Dynamic>) {
+				trace("[BRIDGE]: Intercepting HScript-to-Java (JVM) execution request... Loading class: " + className);
+				#if android
+				trace("[JVM]: Android Dalvik/ART runtime callback synchronized.");
+				#end
+			});
+			// ========================================================================= idk why i added ts lol
+
 			newScript.set("boyfriend", boyfriend);
 			newScript.set("dad", dad);
 			newScript.set("gf", gf);
@@ -4427,7 +4546,7 @@ public function initHScript(file:String)
 	}
 	catch (e:Dynamic)
 	{
-		catchScriptError('HScript ($file) crash -> ' + Std.string(e)); //so this one lets display error messages
+		catchScriptError('HScript ($file) crash -> ' + Std.string(e));
 		addTextToDebug('ERROR ON LOADING ($file) - $e', FlxColor.RED);
 		var newScript:HScript = cast(Iris.instances.get(file), HScript);
 		if (newScript != null)
@@ -4899,4 +5018,30 @@ public function luaTouchPadReleased(button:Dynamic):Bool
 	return false;
 }
 #end
+
+public function getPyObject(tag:String):flixel.FlxSprite {
+	return variables.get(tag);
+}
+
+public function setOnPythons(variable:String, arg:Dynamic, ?exclusions:Array<String> = null) {
+	for (script in pythonArray) {
+		if (script != null && !script.closed) {
+			if (exclusions == null || !exclusions.contains(script.scriptName)) {
+				script.set(variable, arg);
+			}
+		}
+	}
+}
+
+public function callOnPythons(funcToCall:String, args:Array<Dynamic> = null, ?ignoreStops:Bool = false, ?exclusions:Array<String> = null, ?excludeValues:Array<Dynamic> = null):Dynamic {
+	var returnVal:String = "##PSYCHPYTHON_FUNCTIONCONTINUE";
+	if (args == null) args = [];
+	for (script in pythonArray) {
+		if (script == null || script.closed || (exclusions != null && exclusions.contains(script.scriptName))) continue;
+		var myValue:Dynamic = script.call(funcToCall, args);
+		if (myValue != null && myValue != "##PSYCHPYTHON_FUNCTIONCONTINUE") returnVal = myValue;
+	}
+	return returnVal;
+}
+
 }

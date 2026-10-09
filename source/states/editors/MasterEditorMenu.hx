@@ -16,6 +16,7 @@ class MasterEditorMenu extends MusicBeatState
 		'Chart Editor', 
 		'Character Editor', 
 		'Stage Editor',  
+		'Music Player',  
 		'Main Menu Editor', 
 		'Week Editor',
 		'Test stickers',
@@ -110,6 +111,8 @@ class MasterEditorMenu extends MusicBeatState
 					LoadingState.loadAndSwitchState(new CharacterEditorState(Character.DEFAULT_CHARACTER, false));
 				case 'Stage Editor':
 					LoadingState.loadAndSwitchState(new StageEditorState());
+				case 'Music Player':
+					LoadingState.loadAndSwitchState(new MusicPlayerState());
 				case 'Main Menu Editor':
 					MusicBeatState.switchState(new MenuEditorState());
 				case 'Week Editor':

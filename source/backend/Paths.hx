@@ -10,9 +10,11 @@ import mikolka.funkin.custom.NativeFileSystem;
 import backend.Mods;
 #end
 
+using StringTools;
+
 class Paths
 {
-	inline public static var SOUND_EXT = "ogg"; // #if web "mp3" #else "ogg" #end;
+	inline public static var SOUND_EXT = "ogg"; 
 	inline public static var VIDEO_EXT = "mp4";
 
 	static public var currentLevel:String;
@@ -40,7 +42,6 @@ class Paths
 		if (parentfolder != null)
 			return getFolderPath(file, parentfolder);
 
-		// Load from a level folder
 		if (currentLevel != null && currentLevel != 'shared')
 		{
 			var levelPath = getFolderPath(file, currentLevel);
@@ -98,17 +99,28 @@ class Paths
 		var songKey:String = '${formatToSongPath(song)}/Voices';
 		if (postfix != null)
 			songKey += '-' + postfix;
-		// trace('songKey test: $songKey');
 		return returnSound(songKey, 'songs', modsAllowed, false);
 	}
 
 	inline static public function soundRandom(key:String, min:Int, max:Int, ?modsAllowed:Bool = true)
-		return sound(key + FlxG.random.int(min, max), modsAllowed);
+		return sound(key + flixel.FlxG.random.int(min, max), modsAllowed);
 
 	static public function image(key:String, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxGraphic
 	{
-		key = Language.getFileTranslation('images/$key') + '.png';
-		return CacheSystem.loadBitmap(key, parentFolder, allowGPU);
+		var baseKey:String = Language.getFileTranslation('images/$key');
+		var extensions:Array<String> = ['.png', '.jpg', '.jpeg'];
+		var finalKey:String = baseKey + '.png'; // Дефолтный фоллбэк
+
+		for (ext in extensions) {
+			var checkFile:String = baseKey + ext;
+			var fullPath:String = getPath(checkFile, IMAGE, parentFolder, true);
+			if (NativeFileSystem.exists(fullPath)) {
+				finalKey = checkFile;
+				break;
+			}
+		}
+
+		return CacheSystem.loadBitmap(finalKey, parentFolder, allowGPU);
 	}
 
 	inline static public function getTextFromFile(key:String, ?ignoreMods:Bool = false):String
@@ -122,7 +134,6 @@ class Paths
 		var folderKey:String = Language.getFileTranslation('fonts/$key');
 		#if MODS_ALLOWED
 		var file:String = modFolders(folderKey);
-		// THose paths are used directly in flixel components
 		var absolutePath = NativeFileSystem.getPathLike(file);
 		if (absolutePath != null)
 			return absolutePath;
@@ -248,8 +259,20 @@ class Paths
 
 	public static function returnSound(key:String, ?path:String, ?modsAllowed:Bool = true, ?beepOnNull:Bool = true)
 	{
-		var file:String = getPath(Language.getFileTranslation(key) + '.$SOUND_EXT', SOUND, path, modsAllowed);
-		return CacheSystem.loadSound(file, beepOnNull, '$key, PATH: $path');
+		var baseFile:String = Language.getFileTranslation(key);
+		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
+		var finalFile:String = getPath(baseFile + '.$SOUND_EXT', SOUND, path, modsAllowed); // Фоллбэк
+
+		// Сканируем дисковую систему на предмет существования кастомных аудио-сэмплов
+		for (ext in audioExtensions) {
+			var checkFile:String = getPath(baseFile + ext, SOUND, path, modsAllowed);
+			if (NativeFileSystem.exists(checkFile)) {
+				finalFile = checkFile;
+				break;
+			}
+		}
+
+		return CacheSystem.loadSound(finalFile, beepOnNull, '$key, PATH: $path');
 	}
 
 	#if MODS_ALLOWED
@@ -262,11 +285,37 @@ class Paths
 	inline static public function modsVideo(key:String)
 		return modFolders('videos/' + key + '.' + VIDEO_EXT);
 
-	inline static public function modsSounds(path:String, key:String)
-		return modFolders(path + '/' + key + '.' + SOUND_EXT);
+	inline static public function modsSounds(path:String, key:String):String
+	{
+		var baseFile:String = path + '/' + key;
+		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
+		var finalFile:String = modFolders(baseFile + '.' + SOUND_EXT); // Фоллбэк
 
-	inline static public function modsImages(key:String)
-		return modFolders('images/' + key + '.png');
+		for (ext in audioExtensions) {
+			var checkFile:String = modFolders(baseFile + ext);
+			if (NativeFileSystem.exists(checkFile)) {
+				finalFile = checkFile;
+				break;
+			}
+		}
+		return finalFile;
+	}
+
+	inline static public function modsImages(key:String):String
+	{
+		var baseFile:String = 'images/' + key;
+		var imgExtensions:Array<String> = ['.png', '.jpg', '.jpeg'];
+		var finalFile:String = modFolders(baseFile + '.png'); // Дефолт
+
+		for (ext in imgExtensions) {
+			var checkFile:String = modFolders(baseFile + ext);
+			if (NativeFileSystem.exists(checkFile)) {
+				finalFile = checkFile;
+				break;
+			}
+		}
+		return finalFile;
+	}
 
 	inline static public function modsXml(key:String)
 		return modFolders('images/' + key + '.xml');
@@ -315,7 +364,6 @@ class Paths
 		if (folderOrImg is String)
 		{
 			var dir = getPath("images/" + folderOrImg);
-			// We actually DO support system in Animate!
 			if (spriteJson == null)
 			{
 				if (NativeFileSystem.exists(Path.join([dir, "spritemap1.json"])))

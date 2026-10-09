@@ -186,7 +186,7 @@ class UserErrorSubstate extends MusicBeatSubstate
 	{
 		//43
 		var star = #if (CHECK_FOR_UPDATES || debug) "" #else "*" #end;
-		printToTrace('P-SLICE ${MainMenuState.pSliceVersion}$star  (${error.message})');
+		printToTrace('TIMELESS ENGINE ${MainMenuState.TimelessEngineVersion}$star  (${error.message})');
 		textNextY += 35;
 		FlxTimer.wait(1 / 24, () ->
 		{
@@ -232,7 +232,7 @@ class UserErrorSubstate extends MusicBeatSubstate
 			printSpaceToTrace();
             printToTrace(getLogger());
 			if (isCritical)
-				printToTrace('REPORT TO GITHUB.COM/THEREALMERLOW-HUB/TIMELESS-ENGINE');
+				printToTrace('REPORT TO GITHUB.COM/TIMELESSDEVS/TIMELESS-ENGINE');
 			else
 				printToTrace('');
 			if (isCritical)

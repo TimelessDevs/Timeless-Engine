@@ -136,6 +136,8 @@ class Song
 	}
 
 	static var _lastPath:String;
+
+	//I ADDED V-SLICE CHART SUPPORT!!!!!
 	public static function getChart(jsonInput:String, ?folder:String):SwagSong
 	{
 		if(folder == null) folder = jsonInput;
@@ -145,9 +147,63 @@ class Song
 		var formattedSong:String = Paths.formatToSongPath(jsonInput);
 		_lastPath = Paths.json('$formattedFolder/$formattedSong');
 
+		var vsliceDataFolder:String = 'assets/shared/data/' + formattedFolder + '/';
+		var vsliceChartPath:String = vsliceDataFolder + formattedFolder + '-chart.json';
+		var vsliceMetaPath:String = vsliceDataFolder + 'metadata.json';
+
+		if (sys.FileSystem.exists(vsliceChartPath) && sys.FileSystem.exists(vsliceMetaPath))
+		{
+			trace("[TIMELESS HYBRID]: V-Slice chart blueprint detected for song: " + formattedFolder);
+			try
+			{
+				var chartRaw:String = sys.io.File.getContent(vsliceChartPath);
+				var metaRaw:String = sys.io.File.getContent(vsliceMetaPath);
+
+				var vChart = haxe.Json.parse(chartRaw);
+				var vMeta = haxe.Json.parse(metaRaw);
+
+				trace("[TIMELESS HYBRID]: Launching runtime memory cross-conversion...");
+				
+				var convertedPack = states.editors.content.VSlice.convertToPsych(vChart, vMeta);
+
+				if (convertedPack != null && convertedPack.difficulties != null)
+				{
+					var targetDiff:String = "normal";
+					try {
+						targetDiff = Paths.formatToSongPath(backend.Difficulty.getString());
+					} catch(e:Dynamic) {}
+
+					var finalSong:SwagSong = null;
+					if (convertedPack.difficulties.exists(targetDiff)) {
+						finalSong = convertedPack.difficulties.get(targetDiff);
+					} else {
+						for (diffKey in convertedPack.difficulties.keys()) {
+							finalSong = convertedPack.difficulties.get(diffKey);
+							break;
+						}
+					}
+
+					if (finalSong != null)
+					{
+						if (convertedPack.events != null && convertedPack.events.events != null) {
+							finalSong.events = convertedPack.events.events;
+						}
+
+						_lastPath = vsliceChartPath;
+
+						trace("[TIMELESS V-SLICE SUPPORT]: V-Slice chart loaded succesfully into RAM core.");
+						return finalSong;
+					}
+				}
+			}
+			catch(e:haxe.Exception)
+			{
+				trace("[TIMELESS V-SLICE SUPPORT]: Failed to compile V-Slice assets at runtime: " + e.message);
+			}
+		}
+
 		if(NativeFileSystem.exists(_lastPath))
 			rawData = NativeFileSystem.getContent(_lastPath);
-
 
 		return rawData != null ? parseJSON(rawData, jsonInput) : null;
 	}

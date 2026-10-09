@@ -1,0 +1,87 @@
+package timelesspython;
+
+import openfl.utils.Assets;
+
+using StringTools;
+
+class FlxAnimateFunctions
+{
+	
+	public static function implement(script:TimePython)
+	{
+		var interp = script;
+
+		interp.set("makeFlxAnimateSprite", function(tag:String, ?x:Float = 0, ?y:Float = 0, ?loadFolder:String = null) {
+			tag = tag.replace('.', '');
+			
+			var lastSprite = MusicBeatState.getVariables().get(tag);
+			if(lastSprite != null)
+			{
+				lastSprite.kill();
+				if(PlayState.instance != null) PlayState.instance.remove(lastSprite);
+				lastSprite.destroy();
+			}
+
+			var mySprite:ModchartAnimateSprite = new ModchartAnimateSprite(x, y);
+			if(loadFolder != null) Paths.loadAnimateAtlas(mySprite, loadFolder);
+			
+			MusicBeatState.getVariables().set(tag, mySprite);
+			mySprite.active = true;
+		});
+
+		interp.set("loadAnimateAtlas", function(tag:String, folderOrImg:String, ?spriteJson:String = null, ?animationJson:String = null) {
+			var spr:FlxAnimate = cast MusicBeatState.getVariables().get(tag);
+			if(spr != null) Paths.loadAnimateAtlas(spr, folderOrImg, spriteJson, animationJson);
+		});
+		
+		interp.set("addAnimationBySymbol", function(tag:String, name:String, symbol:String, ?framerate:Float = 24, ?loop:Bool = false, ?matX:Float = 0, ?matY:Float = 0) {
+			var obj:FlxAnimate = cast MusicBeatState.getVariables().get(tag);
+			if(obj == null) return false;
+
+			obj.anim.addBySymbol(name, symbol, framerate, loop, matX, matY);
+			if(obj.anim.curSymbol == null)
+			{
+				var obj2:ModchartAnimateSprite = cast (obj, ModchartAnimateSprite);
+				if(obj2 != null) obj2.playAnim(name, true);
+				else obj.anim.play(name, true);
+			}
+			return true;
+		});
+
+		interp.set("addAnimationBySymbolIndices", function(tag:String, name:String, symbol:String, ?indices:Dynamic = null, ?framerate:Float = 24, ?loop:Bool = false, ?matX:Float = 0, ?matY:Float = 0) {
+			var obj:FlxAnimate = cast MusicBeatState.getVariables().get(tag);
+			if(obj == null) return false;
+
+			var myIndices:Array<Int> = [];
+
+			if(indices == null)
+			{
+				myIndices =[0];
+			}
+			else if(Std.isOfType(indices, String))
+			{
+				var strIndices:Array<String> = cast (indices, String).trim().split(',');
+				for (i in 0...strIndices.length) {
+					myIndices.push(Std.parseInt(strIndices[i]));
+				}
+			}
+			else if(Std.isOfType(indices, Array))
+			{
+				myIndices = cast indices;
+			}
+			else 
+			{
+				myIndices =[0];
+			}
+
+			obj.anim.addBySymbolIndices(name, symbol, myIndices, framerate, loop, matX, matY);
+			if(obj.anim.curSymbol == null)
+			{
+				var obj2:ModchartAnimateSprite = cast (obj, ModchartAnimateSprite);
+				if(obj2 != null) obj2.playAnim(name, true);
+				else obj.anim.play(name, true);
+			}
+			return true;
+		});
+	}
+}

@@ -437,7 +437,7 @@ class FunkinPreloader extends FlxBasePreloader
 					cachingGraphicsPercent = 0.0;
 					cachingGraphicsStartTime = elapsed;
 					#if !LEGACY_PSYCH
-					// ? P-Slice precache commonly used graphics
+					// ? Timeless Engine precache commonly used graphics
 					//* FIles here won't be editable by mods
 					var assetsToCache:Array<String> = [
 						// "images/cursor-default.png",

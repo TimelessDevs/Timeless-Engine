@@ -7,10 +7,10 @@
 
         {
             "name": "Debug build",
-            "preLaunchTask": "lime: build linux -debug",
+            "preLaunchTask": "lime: test windows",
             "type": "hxcpp",
             "request": "launch",
-            "program": "${workspaceFolder}/export/debug/linux/bin/PsychEngine"
+            "program": "${workspaceFolder}/export/windows/bin/TimelessEngine"
         },
         {
             "name": "Haxe Interpreter",

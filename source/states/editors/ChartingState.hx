@@ -69,9 +69,6 @@ enum abstract WaveformTarget(String)
 
 class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychUIEvent
 {
-	var testDad:objects.Character;
-	var testBf:objects.Character;
-
 	public static final defaultEvents:Array<Array<String>> =
 	[
 		['', "Nothing. Yep, that's right."], //Always leave this one empty pls
@@ -225,6 +222,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var waveformEnabled:Bool = false;
 	var waveformTarget:WaveformTarget = INST;
 
+	var sTage:FlxSprite;
+	var tbf:FlxSprite;
+	var tOpp:FlxSprite;
+
 	override function create()
 	{
 		if(Difficulty.list.length < 1) Difficulty.resetList();
@@ -275,6 +276,40 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		waveformSprite.scrollFactor.x = 0;
 		waveformSprite.visible = false;
 		add(waveformSprite);
+
+		sTage = new FlxSprite(100, 432).loadGraphic(Paths.image("editors/sTage"));
+		sTage.scrollFactor.set();
+
+		tbf = new FlxSprite(100, 432).loadGraphic(Paths.image("editors/tbf"), true, 300, 256);
+		tbf.animation.add("idle", [0, 1], 12, true);
+		tbf.animation.add("0", [3, 4, 5], 12, false);
+		tbf.animation.add("1", [6, 7, 8], 12, false);
+		tbf.animation.add("2", [9, 10, 11], 12, false);
+		tbf.animation.add("3", [12, 13, 14], 12, false);
+		tbf.animation.add("yeah", [17, 20, 23], 12, false);
+		tbf.animation.play("idle");
+		tbf.animation.finishCallback = function(name:String){
+			tbf.animation.play(name, true, false, tbf.animation.getByName(name).numFrames - 2);
+		}
+		tbf.scrollFactor.set();
+
+		tOpp = new FlxSprite(100, 432).loadGraphic(Paths.image("editors/tOpp"), true, 300, 256);
+		tOpp.animation.add("idle", [0, 1], 12, true);
+		tOpp.animation.add("0", [3, 4, 5], 12, false);
+		tOpp.animation.add("1", [6, 7, 8], 12, false);
+		tOpp.animation.add("2", [9, 10, 11], 12, false);
+		tOpp.animation.add("3", [12, 13, 14], 12, false);
+		tOpp.animation.play("idle");
+		tOpp.animation.finishCallback = function(name:String){
+			tOpp.animation.play(name, true, false, tOpp.animation.getByName(name).numFrames - 2);
+		}
+		tOpp.scrollFactor.set();
+
+		add(sTage);
+		add(tbf);
+		add(tOpp);
+		resetIdle();
+
 
 		dummyArrow = new FlxSprite().makeGraphic(1, 1, FlxColor.WHITE);
 		dummyArrow.setGraphicSize(GRID_SIZE, GRID_SIZE);
@@ -1813,6 +1848,16 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 							strumNote.resetAnim = Math.max(Conductor.stepCrochet * 1.25, note.sustainLength) / 1000 / playbackRate;
 						}
 					}
+
+					var data:Int = note.noteData;
+					if(note.mustPress){
+						tbf.animation.play("" + Std.string(data), true);
+						tbf.color = 0xffffffff;
+					}
+					else if(!note.mustPress){
+						tOpp.animation.play("" + Std.string(data), true);
+						tOpp.color = 0xffffffff;
+					}
 				}
 			}
 			forceDataUpdate = false;
@@ -2272,6 +2317,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		}
 		else
 		{
+			resetIdle();
 			FlxG.sound.music.pause();
 			vocals.pause();
 			opponentVocals.pause();
@@ -2534,6 +2580,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		prevGridBg.vortexLineEnabled = gridBg.vortexLineEnabled = nextGridBg.vortexLineEnabled = vortexEnabled;
 		prevGridBg.vortexLineSpace = gridBg.vortexLineSpace = nextGridBg.vortexLineSpace = GRID_SIZE * 4 * curZoom;
 		updateWaveform();
+		resetIdle();
 	}
 
 	function softReloadNotes(onlyCurrent:Bool = false)
@@ -2714,6 +2761,7 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 	var playerMuteCheckBox:PsychUICheckBox;
 	var opponentVolumeStepper:PsychUINumericStepper;
 	var opponentMuteCheckBox:PsychUICheckBox;
+	var lilBuddiesBox:PsychUICheckBox;
 	function addChartingTab()
 	{
 		var tab_group = mainBox.getTab('Charting').menu;
@@ -2753,9 +2801,19 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		playerMuteCheckBox = new PsychUICheckBox(objX + 100, objY, 'Mute', 60, updateAudioVolume);
 		opponentMuteCheckBox = new PsychUICheckBox(objX + 200, objY, 'Mute', 60, updateAudioVolume);
 
+		lilBuddiesBox = new PsychUICheckBox(10, objY + 25, "Lil' Buddies", 100, function()
+		{
+			tbf.visible = lilBuddiesBox.checked;
+			tOpp.visible = lilBuddiesBox.checked;
+			sTage.visible = lilBuddiesBox.checked;
+		});
+
+		lilBuddiesBox.checked = true;
+
 		tab_group.add(playbackSlider);
 		tab_group.add(mouseSnapCheckBox);
 		tab_group.add(ignoreProgressCheckBox);
+		tab_group.add(lilBuddiesBox);
 
 		tab_group.add(new FlxText(hitsoundPlayerStepper.x, hitsoundPlayerStepper.y - 15, 100, 'Hitsound (Player):'));
 		tab_group.add(new FlxText(hitsoundOpponentStepper.x, hitsoundOpponentStepper.y - 15, 100, 'Hitsound (Opp.):'));
@@ -5777,5 +5835,10 @@ class ChartingState extends MusicBeatState implements PsychUIEventHandler.PsychU
 		#else
 		return [[[0], [0]], [[0], [0]]];
 		#end
+	}
+
+	function resetIdle(){
+		if (tbf != null) tbf.animation.play("idle");
+		if (tOpp != null) tOpp.animation.play("idle");
 	}
 }

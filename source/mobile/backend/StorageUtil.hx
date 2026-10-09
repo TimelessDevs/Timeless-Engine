@@ -114,7 +114,7 @@ class StorageUtil
 enum abstract StorageType(String) from String to String
 {
 	final forcedPath = '/storage/emulated/0/';
-	final packageNameLocal = 'com.merlow.timelessengine';
+	final packageNameLocal = 'com.timeless.timelessengine';
 	final fileLocal = 'TimelessEngine';
 
 	//* Important note

@@ -264,7 +264,7 @@ class CharSelectSubState extends MusicBeatSubState
 		chooseDipshit.loadGraphic(Paths.image('charSelect/chooseDipshit'));
 		add(chooseDipshit);
 
-		// ? P-SLice code
+		// ? Timeless Engine code
 		#if MODS_ALLOWED
 		var UICam = new FunkinCamera("special", 0, 0, FlxG.width, FlxG.height);
 		UICam.bgColor = 0x00FFFFFF;
@@ -743,7 +743,7 @@ class CharSelectSubState extends MusicBeatSubState
 		staticSound.stop();
 		allowInput = false;
 		autoFollow = false; // ! Add mod support
-		// ? P-Slice mods
+		// ? Timeless Engine mods
 		if(!wentBackToFreeplay) VsliceOptions.LAST_MOD = {mod_dir: modSelector?.curMod ?? "", char_name: curChar}; // ? save selected character
 		#if MODS_ALLOWED
 		modSelector.allowInput = false;

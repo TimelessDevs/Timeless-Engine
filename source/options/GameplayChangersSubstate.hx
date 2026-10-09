@@ -77,6 +77,7 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		optionsArray.push(option);
 
 		optionsArray.push(new GameplayOption('Sick Only', 'sickOnly', BOOL, false));
+		optionsArray.push(new GameplayOption('Ghost Tapping', 'ghostTapping', BOOL, false));
 		optionsArray.push(new GameplayOption('Instakill on Miss', 'instakill', BOOL, false));
 		optionsArray.push(new GameplayOption('Practice Mode', 'practice', BOOL, false));
 		optionsArray.push(new GameplayOption('Botplay', 'botplay', BOOL, false));

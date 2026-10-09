@@ -21,7 +21,7 @@ class EventLoader extends BaseStage {
     public static function implement(funk:FunkinLua)
         {
             var lua:State = funk.lua;
-            funk.set('versionPS', MainMenuState.pSliceVersion.trim());
+            funk.set('versionPS', MainMenuState.TimelessEngineVersion.trim());
             Lua_helper.add_callback(lua, "markAsPicoCapable", function(force:Bool = false) {
                 new PicoCapableStage(force);
             });

@@ -16,7 +16,6 @@ import flixel.util.FlxColor;
 #if MODS_ALLOWED
 import states.ModsMenuState;
 #end
-import states.AchievementsMenuState;
 import states.CreditsState;
 import states.editors.MasterEditorMenu;
 #else
@@ -26,7 +25,6 @@ import mikolka.compatibility.VsliceOptions;
 import flixel.FlxObject;
 
 import flixel.FlxG;
-import flixel.group.FlxGroup.FlxTypedGroup;
 import backend.Paths;
 import backend.CoolUtil;
 import backend.MusicBeatState;
@@ -40,7 +38,6 @@ class DesktopMenuState extends FlxBasic
 		'story_mode',
 		'freeplay',
 		#if MODS_ALLOWED 'mods', #end
-		#if ACHIEVEMENTS_ALLOWED 'awards', #end
 		'credits',
 		#if !switch 'donate', #end
 		'options'
@@ -50,7 +47,6 @@ class DesktopMenuState extends FlxBasic
 	var selectedSomethin:Bool = false;
 	var menuItems:FlxTypedGroup<FlxSprite>;
 	var camFollow:FlxObject;
-	
 	var host:MainMenuState;
 
 	public function new(host:MainMenuState) {
@@ -72,18 +68,6 @@ class DesktopMenuState extends FlxBasic
 
 		menuItems = new FlxTypedGroup<FlxSprite>();
 		host.add(menuItems);
-
-		var debugText:FlxText = new FlxText(40, 40, 0, "", 28);
-		debugText.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, "left", FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-		if (mikolka.vslice.ui.MainMenuState.globalLayoutMatrix != null) {
-			debugText.text = "";
-			debugText.color = 0xFF00FF66;
-		} else {
-			debugText.text = "";
-			debugText.color = 0xFFFF0033;
-		}
-		debugText.scrollFactor.set(0, 0);
-		host.add(debugText);
 
 		var matrix:mikolka.vslice.ui.MainMenuState.MenuLayoutData = mikolka.vslice.ui.MainMenuState.globalLayoutMatrix;
 
@@ -113,7 +97,6 @@ class DesktopMenuState extends FlxBasic
 				menuItems.add(menuItem);
 
 				menuItem.scrollFactor.set(0, 0);
-				
 				menuItem.scale.set(customProps.scaleX * matrix.globalScale, customProps.scaleY * matrix.globalScale);
 				menuItem.updateHitbox();
 			} 
@@ -137,6 +120,15 @@ class DesktopMenuState extends FlxBasic
 				menuItem.updateHitbox();
 				menuItem.screenCenter(X);
 			}
+			
+			var targetY:Float = menuItem.y;
+			menuItem.y += 180;
+			menuItem.alpha = 0;
+			
+			FlxTween.tween(menuItem, {alpha: 1, y: targetY}, 0.65, {
+				ease: FlxEase.backOut, 
+				startDelay: i * 0.08
+			});
 		}
 
 		FlxG.camera.follow(camFollow, null, 0.06);
@@ -184,6 +176,13 @@ class DesktopMenuState extends FlxBasic
 
 			if (host.controls.BACK)
 			{
+				if (FlxG.sound.music != null) {
+					FlxG.sound.music.fadeOut(0.6, 0.0);
+				}
+				if (TitleState.titleMenuMusic != null) {
+					TitleState.titleMenuMusic.fadeIn(0.6, 0.0, 0.7); 
+				}
+
 				selectedSomethin = true;
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				MusicBeatState.switchState(new TitleState());
@@ -237,11 +236,6 @@ class DesktopMenuState extends FlxBasic
 								MusicBeatState.switchState(new ModsMenuState());
 							#end
 
-							#if ACHIEVEMENTS_ALLOWED
-							case 'awards':
-								MusicBeatState.switchState(new AchievementsMenuState());
-							#end
-
 							case 'credits':
 								MusicBeatState.switchState(new CreditsState());
 							case 'options':
@@ -253,8 +247,10 @@ class DesktopMenuState extends FlxBasic
 					{
 						if (i == curSelected)
 							continue;
-						FlxTween.tween(menuItems.members[i], {alpha: 0}, 0.4, {
-							ease: FlxEase.quadOut,
+						
+						FlxTween.tween(menuItems.members[i], {alpha: 0, y: FlxG.height + 200}, 0.5, {
+							ease: FlxEase.backIn,
+							startDelay: i * 0.04,
 							onComplete: function(twn:FlxTween)
 							{
 								menuItems.members[i].kill();
@@ -281,10 +277,14 @@ class DesktopMenuState extends FlxBasic
 		if (huh != 0)
 			FlxG.sound.play(Paths.sound('scrollMenu'));
 			
-		menuItems.members[curSelected].animation.play('idle');
-		menuItems.members[curSelected].updateHitbox();
-		
-		applyLayoutOrFallback(menuItems.members[curSelected], optionShit[curSelected], curSelected);
+		var prevItem = menuItems.members[curSelected];
+		if (prevItem != null) {
+			prevItem.animation.play('idle');
+			prevItem.updateHitbox();
+			applyLayoutOrFallback(prevItem, optionShit[curSelected], curSelected);
+			
+			FlxTween.tween(prevItem.scale, {x: 1.0, y: 1.0}, 0.15, {ease: FlxEase.quadOut});
+		}
 
 		curSelected += huh;
 
@@ -293,12 +293,15 @@ class DesktopMenuState extends FlxBasic
 		if (curSelected < 0)
 			curSelected = menuItems.length - 1;
 
-		menuItems.members[curSelected].animation.play('selected');
-		menuItems.members[curSelected].centerOffsets();
+		var item = menuItems.members[curSelected];
+		item.animation.play('selected');
+		item.centerOffsets();
+		applyLayoutOrFallback(item, optionShit[curSelected], curSelected);
 		
-		applyLayoutOrFallback(menuItems.members[curSelected], optionShit[curSelected], curSelected);
+		item.scale.set(1.0, 1.0);
+		FlxTween.tween(item.scale, {x: 1.1, y: 1.1}, 0.25, {ease: FlxEase.backOut});
 
-		camFollow.setPosition(menuItems.members[curSelected].getGraphicMidpoint().x,
-			menuItems.members[curSelected].getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));
+		camFollow.setPosition(item.getGraphicMidpoint().x,
+			item.getGraphicMidpoint().y - (menuItems.length > 4 ? menuItems.length * 8 : 0));
 	}
 }

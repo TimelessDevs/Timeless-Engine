@@ -28,12 +28,12 @@ class VSliceEvents extends BaseStage {
 							}
 						});
 				}
-            case 'Set Camera Bopping': //P-slice event notes
+            case 'Set Camera Bopping': //Timeless Engine event notes
 				var val1 = Std.parseFloat(value1);
 				var val2 = Std.parseFloat(value2);
 				game.camZoomingMult = !Math.isNaN(val2) ? val2 : 1;
 				game.camZoomingFrequency = !Math.isNaN(val1) ? val1 : 4;
-            case 'Target Camera': //P-slice event notes val1: char val2: x,y,dur,ease
+            case 'Target Camera': //Timeless Engine event notes val1: char val2: x,y,dur,ease
                 var keyValues = value2.split(",");
                 if(keyValues.length != 4) {
                     trace("INVALID EVENT VALUE");

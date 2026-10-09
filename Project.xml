@@ -43,7 +43,7 @@
 
 	<!-- ______________________ PSYCH ENGINE CUSTOMIZATION ______________________ -->
 
-	<!-- Compiles mod support for P-Slice. Feel free to disable if you're making a source mod -->
+	<!-- Compiles mod support Timeless Engine. Feel free to disable if you're making a source mod -->
 	<define name="MODS_ALLOWED" if="desktop || mobile" />
 
 	<section unless="debug">
@@ -68,7 +68,7 @@
 	<!-- Adds support for touchscreen devices (like mobiles)-->
 	<define name="TOUCH_CONTROLS_ALLOWED" if="mobile || web || debug" />
 
-	<!-- Do you want to check for P-Slice updates?-->
+	<!-- Do you want to check for Timeless Engine updates?-->
 	<define name="CHECK_FOR_UPDATES" unless="web || hl" />
 
 	<!-- Do you want to support playing videos in your build?-->
@@ -168,7 +168,12 @@
 		<assets path="alsoft.txt" rename="plugins/alsoft.conf" type="text" unless="windows" />
 	</section>
 
+	<!-- Timeless Engine: python folder -->
+	<assets path="python" rename="python" type="template" if="windows" />
+
 	<!-- Assets -->
+	<assets path="assets/scripts" />
+
 	<assets path="assets/fonts" />
 	<assets path="assets/mobile" rename="assets/shared/mobile" if="TOUCH_CONTROLS_ALLOWED" />
 	<assets path="assets/videos" if="VIDEOS_ALLOWED" embed="false"/>
@@ -190,7 +195,7 @@
 		<assets path="assets/secrets" rename="assets/shared" exclude="*.ogg" if="web" />
 		<assets path="assets/secrets" rename="assets/shared" unless="web" />
 	</section>
->
+
 	<section if="TRANSLATIONS_ALLOWED">
 		<assets path="assets/translations" rename="assets" exclude="*.ogg" if="web" />
 		<assets path="assets/translations" rename="assets" unless="web" />
@@ -258,6 +263,36 @@
 
 	<haxelib name="flxanimate" />
 
+	<!-- timeless shit -->
+	<source path="C:/HaxeToolkit/haxe/lib/hxpy/2,0,0" if="cpp" />
+	<!-- <source path="C:/HaxeToolkit/haxe/lib/linc_quickjs" if="cpp" /> -->
+	
+	<!-- hxcpp -->
+	<haxelib name="hxpy" if="cpp" />
+	<!-- <haxelib name="linc_quickjs" if="cpp" /> -->
+	
+	<section if="windows">
+		<config:windows compiler="msvc" />
+	</section>
+
+	<target id="windows" if="cpp">
+		<define name="HXPY_ALLOWED" />
+		<define name="PYTHON_ALLOWED" />
+		<define name="CSHARP_ALLOWED" />
+		<define name="HXPY_WINDOWS" />
+		<compilerflag value="-DMAIN_DYNAMICS" />
+		<compilerflag value="-I/hxpy/include" />
+	</target>
+
+	<template path="python" rename="python" if="windows" />
+	<template path="python/python3.dll" rename="python3.dll" if="windows" />
+	<template path="python/python313.dll" rename="python313.dll" if="windows" />
+
+	<!-- This one rejects python if its mobile build so i dont need to suffer -->
+	<target id="android">
+		<define name="HXPY_ANDROID" />
+	</target>
+
 	<!-- Category Type for Apple Systems -->
 	<config:ios category_type="public.app-category.music-games" />
 	<config:mac category_type="public.app-category.music-games" />
@@ -314,7 +349,7 @@
 	the Flixel core focus lost screen-->
 	<haxedef name="FLX_NO_FOCUS_LOST_SCREEN" />
 
-	<!-- Let user access P-Slice files-->
+	<!-- Let user access Timeless Engine files-->
 	<haxedef name="SHARE_MOBILE_FILES" if="mobile" />
 
 	<!--Disable
@@ -378,6 +413,9 @@
 	<!-- more verbose HScript-->
 
 	<haxedef name="hscriptPos" if="HSCRIPT_ALLOWED" />
+
+	<haxedef name="HXPY_ALLOWED" if="hxpy" />
+	<!-- <haxedef name="QUICKJS_ALLOWED" if="linc_quickjs" /> -->
 
 	<!-- _________________________________ Custom _______________________________ -->
 
