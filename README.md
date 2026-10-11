@@ -15,3 +15,5 @@ You can use our code ANYWHERE you want, but give us credits :3
 > [!TIP]
 Want to stay updated with this project?
 Check out our [release page!](https://github.com/therealmerlow-hub/Timeless-Engine/releases)
+
+The banner background was inspired by [codename engine's](https://github.com/CodenameCrew/CodenameEngine) banner background.
