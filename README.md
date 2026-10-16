@@ -14,4 +14,4 @@ You can use our code ANYWHERE you want, but give us credits :3
 
 > [!TIP]
 Want to stay updated with this project?
-Check out our [release page!](https://github.com/therealmerlow-hub/Timeless-Engine/releases)
+Check out our [release page!](https://github.com/timelessdevs/Timeless-Engine/releases)

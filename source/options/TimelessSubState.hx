@@ -1,10 +1,10 @@
 package options;
 import options.Option;
 
-class PSliceSubState extends BaseOptionsMenu {
+class TimelessSubState extends BaseOptionsMenu {
     public function new() {
-        title = Language.getPhrase("vslice_menu","Timeless Engine settings");
-        rpcTitle = "Timeless Engine";
+        title = Language.getPhrase("vslice_menu","T-Slice settings");
+        rpcTitle = "P-Slice settings menu";
         var option:Option = new Option('Freeplay dynamic coloring',
 			'Enables dynamic freeplay background color. Disable this if you prefer original V-slice freeplay menu colors',
 			'vsliceFreeplayColors',

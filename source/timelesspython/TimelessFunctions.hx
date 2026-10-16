@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 using StringTools;
 
 import flixel.FlxG;
@@ -188,3 +189,4 @@ class TimelessFunctions
 		});
 	}
 }
+#end

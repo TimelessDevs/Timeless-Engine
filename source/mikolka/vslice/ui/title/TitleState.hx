@@ -30,7 +30,7 @@ class TitleState extends MusicBeatState
 	var titleTextColors:Array<FlxColor> = [0xFF33FFFF, 0xFF3333CC];
 	var titleTextAlphas:Array<Float> = [1, .64];
 	var titleTimer:Float = 0;
-	var musicBPM:Float = 102;
+	var musicBPM:Float = 104;
 	private var sickBeats:Int = 0;
 
 	override public function create():Void
@@ -165,8 +165,25 @@ class TitleState extends MusicBeatState
 			FlxG.camera.flash(VsliceOptions.FLASHBANG ? FlxColor.WHITE : 0x4CFFFFFF, 1);
 			FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
 
-			if (FlxG.sound.music != null) FlxG.sound.music.fadeIn(1.0, 0.0, 0.7);
-			if (titleMenuMusic != null) titleMenuMusic.fadeOut(1.0, 0.0);
+			backend.events.NotesEvent.triggerStandalone(this);
+
+			if (logoBl != null)
+			{
+				remove(logoBl);
+				insert(members.length, logoBl);
+			}
+
+			if (FlxG.sound.music != null) 
+			{
+				if (!FlxG.sound.music.playing) FlxG.sound.music.play();
+				FlxG.sound.music.volume = 0.7;
+			}
+				
+			if (titleMenuMusic != null) 
+			{
+				titleMenuMusic.volume = 0.0;
+				if (titleMenuMusic.playing) titleMenuMusic.stop();
+			}
 
 			if (logoBl != null) {
 				var randomExitTilt:Float = FlxG.random.float(25, 25) * FlxG.random.sign();

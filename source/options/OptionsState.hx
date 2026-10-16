@@ -57,7 +57,7 @@ class OptionsState extends MusicBeatState
 			case 'Adjust Delay and Combo':
 				MusicBeatState.switchState(new options.NoteOffsetState());
 			case 'Timeless Engine Options':
-				openSubState(new PSliceSubState());
+				openSubState(new TimelessSubState());
 			case 'V-Slice Options':
 				openSubState(new VSliceSubState());
 			#if (TOUCH_CONTROLS_ALLOWED || mobile)
@@ -74,6 +74,21 @@ class OptionsState extends MusicBeatState
 	override function create()
 	{
 		mainCam = initPsychCamera();
+
+		@:privateAccess
+		if (FlxG.sound.music != null && FlxG.sound.music._sound != null) 
+		{
+			FlxG.sound.music.volume = 0.0;
+		}
+		
+		@:privateAccess
+		if (mikolka.vslice.ui.title.TitleState.titleMenuMusic != null && mikolka.vslice.ui.title.TitleState.titleMenuMusic._sound != null) 
+		{
+			if (!mikolka.vslice.ui.title.TitleState.titleMenuMusic.playing) 
+				mikolka.vslice.ui.title.TitleState.titleMenuMusic.play();
+			mikolka.vslice.ui.title.TitleState.titleMenuMusic.volume = 0.7;
+		}
+
 		funnyCam = new FlxCamera();
 		funnyCam.bgColor.alpha = 0;
 		FlxG.cameras.add(funnyCam, false);
@@ -177,7 +192,23 @@ class OptionsState extends MusicBeatState
 				LoadingState.loadAndSwitchState(new PlayState());
 				FlxG.sound.music.volume = 0;
 			}
-			else MusicBeatState.switchState(new MainMenuState());
+			else 
+			{
+				if (FlxG.sound.music != null) 
+				{
+					if (!FlxG.sound.music.playing) FlxG.sound.music.play();
+					FlxG.sound.music.volume = 0.7;
+				}
+				
+				if (mikolka.vslice.ui.title.TitleState.titleMenuMusic != null) 
+				{
+					mikolka.vslice.ui.title.TitleState.titleMenuMusic.volume = 0.0;
+					if (mikolka.vslice.ui.title.TitleState.titleMenuMusic.playing)
+						mikolka.vslice.ui.title.TitleState.titleMenuMusic.stop();
+				}
+					
+				MusicBeatState.switchState(new mikolka.vslice.ui.MainMenuState());
+			}
 		}
 		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
 	}

@@ -66,12 +66,6 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			BOOL);
 		addOption(option);
 
-		var option:Option = new Option('Timeless Mode',
-			'If checked, FUCKING RIPS YOU APART',
-			'timelessMode',
-			'bool');
-		addOption(option);
-
 		var option:Option = new Option('Hitsound Volume',
 			'Funny notes does \"Tick!\" when you hit them.',
 			'hitsoundVolume',

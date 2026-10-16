@@ -53,8 +53,6 @@ import states.InitState;
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
 
-	public var timelessMode:Bool = false;
-
 	public var vsliceMobileControls:Bool = false;
 	public var vsliceFreeplayColors:Bool = true;
 	public var vsliceResults:Bool = true;
@@ -106,8 +104,7 @@ import states.InitState;
 		'instakill' => false,
 		'practice' => false,
 		'botplay' => false,
-		'opponentplay' => false,
-		'timelessMode' => false
+		'opponentplay' => false
 	];
 
 	public var comboOffset:Array<Int> = [0, 0, 0, 0];
@@ -268,9 +265,19 @@ class ClientPrefs {
 		#if (!html5 && !switch)
 		FlxG.autoPause = ClientPrefs.data.autoPause;
 
-		if(FlxG.save.data.framerate == null) {
-			final refreshRate:Int = FlxG.stage.application.window.displayMode.refreshRate;
-			data.framerate = Std.int(FlxMath.bound(refreshRate, 60, 240));
+		try {
+			var deviceRefreshRate:Int = 60;
+			if (FlxG.stage != null && FlxG.stage.window != null && FlxG.stage.window.display != null) {
+				deviceRefreshRate = Std.int(FlxG.stage.window.display.currentMode.refreshRate);
+			} else {
+				deviceRefreshRate = Std.int(FlxG.stage.application.window.displayMode.refreshRate);
+			}
+			
+			if (FlxG.save.data.framerate == null || data.framerate == 60) {
+				data.framerate = Std.int(FlxMath.bound(deviceRefreshRate, 60, 240));
+			}
+		} catch(e:Dynamic) {
+			if (FlxG.save.data.framerate == null) data.framerate = 60;
 		}
 		#end
 

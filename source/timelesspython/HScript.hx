@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 import flixel.FlxBasic;
 import flixel.FlxG;
 import flixel.FlxSprite;
@@ -511,4 +512,5 @@ class CustomFlxColor {
 	public static function fromString(str:String):Int
 		return cast FlxColor.fromString(str);
 }
+#end
 #end

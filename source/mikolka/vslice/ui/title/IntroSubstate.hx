@@ -5,22 +5,29 @@ import flixel.group.FlxGroup;
 
 class IntroSubstate extends MusicBeatSubstate
 {
-    var credGroup:FlxGroup = new FlxGroup();
+	var credGroup:FlxGroup = new FlxGroup();
 	var textGroup:FlxGroup = new FlxGroup();
 	var blackScreen:FlxSprite;
 	var credTextShit:Alphabet;
 	var ngSpr:FlxSprite;
-
-    var curWacky:Array<String> = [];
-
+	var curWacky:Array<String> = [];
 	var wackyImage:FlxSprite;
-    public function new() {
-        super();
-        curWacky = FlxG.random.getObject(getIntroTextShit()); 
-    }
-    override function create() {
-        super.create();
-        blackScreen = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+	private var sickBeats:Int = 0;
+
+	public function new()
+	{
+		super();
+		var textData = getIntroTextShit();
+		if (textData.length > 0)
+			curWacky = FlxG.random.getObject(textData);
+		else
+			curWacky = ["Friday Night Funkin'", "Timeless Engine"];
+	}
+
+	override function create()
+	{
+		super.create();
+		blackScreen = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
 		blackScreen.scale.set(FlxG.width, FlxG.height);
 		blackScreen.updateHitbox();
 		credGroup.add(blackScreen);
@@ -53,18 +60,16 @@ class IntroSubstate extends MusicBeatSubstate
 		ngSpr.antialiasing = VsliceOptions.FLASHBANG;
 		ngSpr.visible = false;
 
-        add(credGroup);
+		add(credGroup);
 		add(ngSpr);
-    }
+	}
 
-	private var sickBeats:Int = 0; // Basically curBeat but won't be skipped if you hold the tab or resize the screen
 	override function beatHit()
 	{
 		super.beatHit();
 		sickBeats++;
 		switch (sickBeats)
 		{
-
 			case 2:
 				createCoolText(['Funkin Crew Inc', 'Shadow Mario', 'Timeless']);
 			case 4:
@@ -82,7 +87,7 @@ class IntroSubstate extends MusicBeatSubstate
 			case 10:
 				createCoolText([curWacky[0]]);
 			case 12:
-				addMoreText(curWacky[1]);
+				if (curWacky.length > 1) addMoreText(curWacky[1]);
 			case 13:
 				deleteCoolText();
 			case 14:
@@ -90,14 +95,13 @@ class IntroSubstate extends MusicBeatSubstate
 			case 15:
 				addMoreText('Night');
 			case 16:
-				addMoreText('Funkin'); // credTextShit.text += '\nFunkin';
-
-
+				addMoreText('Funkin');
 		}
 	}
 
 	function createCoolText(textArray:Array<String>, ?offset:Float = 0)
 	{
+		if (textArray == null) return;
 		for (i in 0...textArray.length)
 		{
 			#if !LEGACY_PSYCH
@@ -130,28 +134,41 @@ class IntroSubstate extends MusicBeatSubstate
 
 	function deleteCoolText()
 	{
+		if (textGroup == null || credGroup == null) return;
 		while (textGroup.members.length > 0)
 		{
-			credGroup.remove(textGroup.members[0], true);
-			textGroup.remove(textGroup.members[0], true);
+			var member = textGroup.members[0];
+			if (member != null)
+			{
+				credGroup.remove(member, true);
+				textGroup.remove(member, true);
+			}
+			else
+			{
+				textGroup.members.shift();
+			}
 		}
 	}
 
 	function getIntroTextShit():Array<Array<String>>
 	{
+		var firstArray:Array<String> = [];
 		#if (MODS_ALLOWED && !LEGACY_PSYCH)
-		var firstArray:Array<String> = Mods.mergeAllTextsNamed('data/introText.txt');
+		firstArray = Mods.mergeAllTextsNamed('data/introText.txt');
 		#else
 		var fullText:String = NativeFileSystem.getContent(Paths.txt('introText'));
-		var firstArray:Array<String> = fullText.split('\n');
+		if (fullText != null && fullText.length > 0)
+			firstArray = fullText.split('\n');
 		#end
+		
 		var swagGoodArray:Array<Array<String>> = [];
-
 		for (i in firstArray)
 		{
-			swagGoodArray.push(i.split('--'));
+			if (i != null && i.trim().length > 0)
+			{
+				swagGoodArray.push(i.trim().split('--'));
+			}
 		}
-
 		return swagGoodArray;
 	}
 }

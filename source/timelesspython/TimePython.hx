@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 import backend.WeekData;
 import backend.WeekData;
 import backend.Highscore;
@@ -1929,9 +1930,6 @@ debug_print = debugPrint
 			trace('Closing script $scriptName');
 			return closed;
 		});
-		#if DISCORD_ALLOWED backend.DiscordClient.addLuaCallbacks(cast this); #end
-		#if ACHIEVEMENTS_ALLOWED backend.Achievements.addLuaCallbacks(cast this); #end
-		#if TRANSLATIONS_ALLOWED backend.Language.addLuaCallbacks(cast this); #end
 
 		HScript.implement(this);
 		#if flxanimate FlxAnimateFunctions.implement(this); #end
@@ -2511,3 +2509,4 @@ gc.collect()
 		return null;
 	}
 }
+#end

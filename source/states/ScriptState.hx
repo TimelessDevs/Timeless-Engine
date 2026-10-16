@@ -4,7 +4,7 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.text.FlxText;
 import flixel.util.FlxColor;
-import psychhx.HScript; // Подключаем твою текущую обертку hscript-improved
+import psychhx.HScript;
 import sys.FileSystem;
 import sys.io.File;
 
@@ -21,7 +21,6 @@ class ScriptState extends backend.MusicBeatState
 
 	override function create()
 	{
-		// Ищем кастомный Haxe-экран в папке скриптов мода
 		var path:String = 'mods/' + Mods.currentModDirectory + '/states/' + scriptName + '.hx';
 		if (!FileSystem.exists(path)) {
 			path = 'assets/states/' + scriptName + '.hx';
@@ -32,7 +31,6 @@ class ScriptState extends backend.MusicBeatState
 			try {
 				hscript = new HScript(null, path);
 				
-				// Прокидываем базовые утилиты, чтобы мододел мог рисовать интерфейсы
 				hscript.set("add", add);
 				hscript.set("remove", remove);
 				hscript.set("FlxG", flixel.FlxG);
@@ -42,7 +40,6 @@ class ScriptState extends backend.MusicBeatState
 				hscript.set("Paths", backend.Paths);
 				hscript.set("this", this);
 				
-				// Позволяем возвращаться в стандартное Главное Меню одной командой
 				hscript.set("goBackToMainMenu", function() {
 					backend.MusicBeatState.switchState(new states.MainMenuState());
 				});
@@ -53,7 +50,7 @@ class ScriptState extends backend.MusicBeatState
 				trace("[SCRIPT STATE]: Successfully initialized custom state screen -> " + scriptName);
 			} catch(e:Dynamic) {
 				trace("[SCRIPT STATE CRASH]: Failed to parse custom state: " + e);
-				backend.MusicBeatState.switchState(new states.MainMenuState()); // Безопасный фоллбэк при ошибках
+				backend.MusicBeatState.switchState(new states.MainMenuState());
 			}
 		} else {
 			trace("[SCRIPT STATE ERROR]: Hx script state file not found at " + path);
@@ -67,7 +64,6 @@ class ScriptState extends backend.MusicBeatState
 	{
 		super.update(elapsed);
 		
-		// Позволяем скрипту обрабатывать покадровые обновления и ввод с клавиатуры/мыши
 		if (hscript != null && hscript.exists("onUpdate")) {
 			hscript.call("onUpdate", [elapsed]);
 		}

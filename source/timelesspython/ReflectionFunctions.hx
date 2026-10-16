@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 import Type.ValueType;
 import haxe.Constraints;
 import flixel.FlxSprite;
@@ -378,3 +379,4 @@ def createInstance(variable_to_save, class_name, args):
         return funcToRun != null ? Reflect.callMethod(obj, funcToRun, args) : null;
     }
 }
+#end

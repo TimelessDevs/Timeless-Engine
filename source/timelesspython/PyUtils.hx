@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 import backend.WeekData;
 import objects.Character;
 import backend.StageData;
@@ -486,3 +487,4 @@ class PyUtils
 		return null;
 	}
 }
+#end

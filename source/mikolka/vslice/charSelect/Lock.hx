@@ -3,32 +3,33 @@ package mikolka.vslice.charSelect;
 import flixel.util.FlxColor;
 import flxanimate.effects.FlxTint;
 import mikolka.funkin.FlxAtlasSprite;
-import mikolka.compatibility.funkin.FunkinPath as Paths; 
+import mikolka.compatibility.funkin.FunkinPath as Paths;
+
 class Lock extends FlxAtlasSprite
 {
-  var colors:Array<FlxColor> = [
-    0x31F2A5, 0x20ECCD, 0x24D9E8,
-    0x20ECCD, 0x20C8D4, 0x209BDD,
-    0x209BDD, 0x2362C9, 0x243FB9
-  ]; // lock colors, in a nx3 matrix format
+	static final COLORS:Array<FlxColor> = [
+		0x31F2A5, 0x20ECCD, 0x24D9E8,
+		0x20ECCD, 0x20C8D4, 0x209BDD,
+		0x209BDD, 0x2362C9, 0x243FB9
+	];
 
-  public function new(x:Float = 0, y:Float = 0, index:Int)
-  {
-    super(x, y, "charSelect/lock");
+	static final SYMBOLS:Array<String> = ["lock", "lock top 1", "lock top 2", "lock top 3", "lock base fuck it"];
 
-    var tint:FlxTint = new FlxTint(colors[index], 1);
+	public function new(x:Float = 0, y:Float = 0, index:Int)
+	{
+		super(x, y, "charSelect/lock");
+		var tint = new FlxTint(COLORS[index], 1);
 
-    var arr:Array<String> = ["lock", "lock top 1", "lock top 2", "lock top 3", "lock base fuck it"];
-
-    var func = function(name) {
-      var symbol = anim.symbolDictionary[name];
-      if (symbol != null && symbol.timeline.get("color") != null) symbol.timeline.get("color").get(0).colorEffect = tint;
-    }
-    for (symbol in arr)
-    {
-      func(symbol);
-    }
-
-    playAnimation("idle");
-  }
+		for (name in SYMBOLS)
+		{
+			var symbol = anim.symbolDictionary.get(name);
+			if (symbol != null && symbol.timeline != null)
+			{
+				var colorTimeline = symbol.timeline.get("color");
+				if (colorTimeline != null && colorTimeline.get(0) != null)
+					colorTimeline.get(0).colorEffect = tint;
+			}
+		}
+		playAnimation("idle");
+	}
 }

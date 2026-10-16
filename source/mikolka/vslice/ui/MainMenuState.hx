@@ -28,9 +28,9 @@ class MainMenuState extends MusicBeatState
 	public var cheatBuffer:String = "";
 
 	#if !LEGACY_PSYCH
-	public static var psychEngineVersion:String = '0.0.4';
+	public static var psychEngineVersion:String = '0.0.5';
 	#else
-	public static var psychEngineVersion:String = '0.0.4';
+	public static var psychEngineVersion:String = '0.0.5';
 	#end
 	public static var TimelessEngineVersion:String = '0.0.4';
 	public static var funkinVersion:String = '0.7.6';
@@ -82,7 +82,7 @@ class MainMenuState extends MusicBeatState
 				
 				globalLayoutMatrix = parsedData;
 				
-				trace("[LAYOUT SUCCESS]: Loaded matrix path -> " + validPath);
+				trace("[LAYOUT SUCCESS]: Loaded path -> " + validPath);
 				return parsedData;
 			} catch(e:Dynamic) {
 				trace("[LAYOUT CRASH]: Path structural metadata error: " + validPath + " -> " + Std.string(e));
@@ -99,6 +99,23 @@ class MainMenuState extends MusicBeatState
 
 	override function create()
 	{
+		if (mikolka.vslice.ui.title.TitleState.titleMenuMusic != null && mikolka.vslice.ui.title.TitleState.titleMenuMusic.playing)
+		{
+			mikolka.vslice.ui.title.TitleState.titleMenuMusic.stop();
+		}
+		
+		if (FlxG.sound.music != null)
+		{
+			if (!FlxG.sound.music.playing)
+			{
+				FlxG.sound.playMusic(Paths.music('freakyMenu'), 0.7);
+			}
+			else
+			{
+				FlxG.sound.music.volume = 0.7;
+			}
+		}
+
 		if(stickerSubState) ModsHelper.clearStoredWithoutStickers();
 		else CacheSystem.clearStoredMemory();
 		CacheSystem.clearUnusedMemory();
@@ -175,7 +192,7 @@ class MainMenuState extends MusicBeatState
 
 	function goToOptions()
 	{
-		MusicBeatState.switchState(new OptionsState());
+		MusicBeatState.switchState(new options.OptionsState());
 		#if !LEGACY_PSYCH OptionsState.onPlayState = false; #end
 		if (PlayState.SONG != null)
 		{

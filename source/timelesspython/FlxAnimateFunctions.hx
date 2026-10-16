@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 import openfl.utils.Assets;
 
 using StringTools;
@@ -85,3 +86,4 @@ class FlxAnimateFunctions
 		});
 	}
 }
+#end

@@ -24,7 +24,7 @@ import editors.MasterEditorMenu;
 #end
 import flixel.addons.transition.FlxTransitionableState;
 
-@:access(mikolka.vslice.ui.MainMenuState)
+@:access(mobile.objects.GridButtons)
 class MobileMenuState extends FlxBasic {
 	var selectedSomethin:Bool = false;
 	var host:MainMenuState;
@@ -46,12 +46,10 @@ class MobileMenuState extends FlxBasic {
 			selectedSomethin = true;
 
 			if (VsliceOptions.FLASHBANG)
-				FlxFlicker.flicker(host.magenta, 1.1, 0.15, false);
+				FlxFlicker.flicker(@:privateAccess host.magenta, 1.1, 0.15, false);
 
-			var curBtn = grid.currentButton;
 			for (i in 0...buttonsList.length) {
 				var btn = buttonsList[i];
-				if (btn == curBtn) continue;
 				FlxTween.tween(btn, {alpha: 0, y: FlxG.height + 200}, 0.5, {
 					ease: FlxEase.backIn,
 					startDelay: i * 0.04,
@@ -67,7 +65,6 @@ class MobileMenuState extends FlxBasic {
 			MusicBeatState.switchState(new StoryMenuState());
 		});
 		storyBtn.selectedOffset.set(10, 15);
-		applyMobileLayoutProperties(storyBtn, 'story_mode');
 		buttonsList.push(storyBtn);
 
 		var freeplayBtn = grid.makeButton('freeplay', 0, () -> {
@@ -92,7 +89,6 @@ class MobileMenuState extends FlxBasic {
 			});
 		});
 		freeplayBtn.selectedOffset.set(10, 20);
-		applyMobileLayoutProperties(freeplayBtn, 'freeplay');
 		buttonsList.push(freeplayBtn);
 
 		#if MODS_ALLOWED
@@ -100,7 +96,6 @@ class MobileMenuState extends FlxBasic {
 			FlxG.mouse.visible = false;
 			MusicBeatState.switchState(new ModsMenuState());
 		});
-		applyMobileLayoutProperties(modsBtn, 'mods');
 		buttonsList.push(modsBtn);
 		#end
 
@@ -109,24 +104,21 @@ class MobileMenuState extends FlxBasic {
 			MusicBeatState.switchState(new CreditsState());
 		});
 		creditsBtn.selectedOffset.set(150, 10);
-		applyMobileLayoutProperties(creditsBtn, 'credits');
 		buttonsList.push(creditsBtn);
 
 		#if !switch
 		var donateBtn = new GridTileDonate(grid);
 		grid.addButton(donateBtn, 1);
 		donateBtn.selectedOffset.set(30, 0);
-		applyMobileLayoutProperties(donateBtn, 'merch');
 		buttonsList.push(donateBtn);
 		#end
 
 		var optionsBtn = new OptionsButton(grid, () -> {
 			FlxG.mouse.visible = false;
-			host.goToOptions();
+			@:privateAccess host.goToOptions();
 		});
 		grid.addButton(optionsBtn, 0);
 		optionsBtn.setPosition((MobileScaleMode.gameCutoutSize.x/4)+35, FlxG.height - 200);
-		applyMobileLayoutProperties(optionsBtn, 'options');
 		buttonsList.push(optionsBtn);
 
 		for (i in 0...buttonsList.length) {
@@ -150,58 +142,18 @@ class MobileMenuState extends FlxBasic {
 		}
 	}
 
-	private function applyMobileLayoutProperties(btn:flixel.FlxSprite, name:String):Void
-	{
-		var matrix:mikolka.vslice.ui.MainMenuState.MenuLayoutData = mikolka.vslice.ui.MainMenuState.globalLayoutMatrix;
-		var checkName:String = name.toLowerCase().trim();
-
-		if (matrix != null && matrix.items != null) {
-			for (prop in matrix.items) {
-				var jsonName:String = prop.name.toLowerCase().trim();
-				if (jsonName == checkName) {
-					btn.x = prop.x;
-					btn.y = prop.y;
-					btn.scale.set(prop.scaleX * matrix.globalScale, prop.scaleY * matrix.globalScale);
-					btn.updateHitbox();
-					btn.scrollFactor.set(0, 0);
-					break;
-				}
-			}
-		}
-	}
-
 	override function update(elapsed:Float) {
 		if (!selectedSomethin)
 		{
 			final controls = host.controls;
-
-			var prevBtn = grid.currentButton;
 
 			if (controls.UI_UP_P) grid.changeSelection(0, -1);
 			if (controls.UI_DOWN_P) grid.changeSelection(0, 1);
 			if (controls.UI_LEFT_P) grid.changeSelection(-1, 0);
 			if (controls.UI_RIGHT_P) grid.changeSelection(1, 0);
 
-			var newBtn = grid.currentButton;
-			if (newBtn != prevBtn) {
-				if (prevBtn != null) {
-					FlxTween.tween(prevBtn.scale, {x: 1.0, y: 1.0}, 0.15, {ease: FlxEase.quadOut});
-				}
-				if (newBtn != null) {
-					newBtn.scale.set(1.0, 1.0);
-					FlxTween.tween(newBtn.scale, {x: 1.1, y: 1.1}, 0.25, {ease: FlxEase.backOut});
-				}
-			}
-
 			if (controls.BACK)
 			{
-				if (FlxG.sound.music != null) {
-					FlxG.sound.music.fadeOut(0.6, 0.0);
-				}
-				if (TitleState.titleMenuMusic != null) {
-					TitleState.titleMenuMusic.fadeIn(0.6, 0.0, 0.7);
-				}
-				
 				selectedSomethin = true;
 				FlxG.sound.play(Paths.sound('cancelMenu'));
 				MusicBeatState.switchState(new TitleState());
@@ -211,8 +163,7 @@ class MobileMenuState extends FlxBasic {
 				selectedSomethin = true;
 				grid.confirmCurrentButton();
 			}
-			if (#if TOUCH_CONTROLS_ALLOWED host.touchPad.buttonC.justPressed || #end#if LEGACY_PSYCH FlxG.keys.anyJustPressed(ClientPrefs.keyBinds.get('debug_1')
-				.filter(s -> s != -1)) #else controls.justPressed('debug_1') #end)
+			if (#if TOUCH_CONTROLS_ALLOWED host.touchPad.buttonC.justPressed || #end#if LEGACY_PSYCH FlxG.keys.anyJustPressed(ClientPrefs.keyBinds.get('debug_1').filter(s -> s != -1)) #else controls.justPressed('debug_1') #end)
 			{
 				selectedSomethin = true;
 				FlxTransitionableState.skipNextTransIn = false;

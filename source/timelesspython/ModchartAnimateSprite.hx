@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 #if flxanimate
 class ModchartAnimateSprite extends FlxAnimate
 {
@@ -24,4 +25,5 @@ class ModchartAnimateSprite extends FlxAnimate
 		animOffsets.set(name, [x, y]);
 	}
 }
+#end
 #end

@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 import hxpy.Py;
 import hxpy.PyImport;
 import hxpy.PyModule;
@@ -60,3 +61,4 @@ class CallbackHandler
         }
     }
 }
+#end

@@ -14,6 +14,7 @@ import sys.io.File;
 import haxe.Json;
 import flixel.ui.FlxBar;
 import flash.media.Sound;
+import openfl.geom.Rectangle;
 
 using StringTools;
 
@@ -28,11 +29,14 @@ typedef TrackInfo = {
 class MusicPlayerState extends backend.MusicBeatState
 {
 	private var playlist:Array<TrackInfo> = [];
+	private var customPlaylist:Array<TrackInfo> = [];
 	private var grpTexts:FlxTypedGroup<FlxText>;
 	private var curSelected:Int = 0;
 
 	private var bg:FlxSprite;
 	private var neonGrid:FlxSprite;
+	private var glassPanel:FlxSprite;
+	private var panelBorder:FlxSprite;
 	
 	private var currentTrackTitle:FlxText;
 	private var timeText:FlxText;
@@ -41,8 +45,6 @@ class MusicPlayerState extends backend.MusicBeatState
 	private var modeText:FlxText;
 	private var helpText:FlxText;
 	
-	private var glassPanel:FlxSprite;
-	private var panelBorder:FlxSprite;
 	private var timeBar:FlxBar;
 	private var timeBarBg:FlxSprite;
 	
@@ -66,6 +68,7 @@ class MusicPlayerState extends backend.MusicBeatState
 	private var currentPitch:Float = 1.0;
 	private var loopMode:Bool = false;
 	private var shuffleMode:Bool = false;
+	private var customPlaylistMode:Bool = false;
 	
 	private var playerVocalsEnabled:Bool = true;
 	private var opponentVocalsEnabled:Bool = true;
@@ -75,10 +78,11 @@ class MusicPlayerState extends backend.MusicBeatState
 	private var runtimeTimer:Float = 0;
 	private var visualScrollY:Float = 0;
 	private var textPulseTimer:Float = 0;
-
-    private var nextBeatTime:Float = 0;
 	private var beatInterval:Float = 0;
 
+	private var spectrumBars:Array<FlxSprite> = [];
+	private var spectrumGroup:FlxTypedGroup<FlxSprite>;
+	private var nextWaveTimer:Float = 0;
 
 	override function create()
 	{
@@ -96,7 +100,7 @@ class MusicPlayerState extends backend.MusicBeatState
 		FlxG.mouse.visible = true;
 
 		bg = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
-		bg.color = 0xFF0D021A; 
+		bg.color = 0xFF080112; 
 		bg.scrollFactor.set();
 		add(bg);
 
@@ -111,7 +115,7 @@ class MusicPlayerState extends backend.MusicBeatState
 
 		for (i in 0...playlist.length) {
 			var trackText:FlxText = new FlxText(60, 0, 550, playlist[i].name.toLowerCase(), 36);
-			trackText.setFormat(Paths.font("vcr.ttf"), 36, FlxColor.WHITE, "left", flixel.text.FlxTextBorderStyle.OUTLINE, 0xFF1A0033);
+			trackText.setFormat(Paths.font("vcr.ttf"), 36, FlxColor.WHITE, "left", flixel.text.FlxTextBorderStyle.OUTLINE, 0xFF0D021A);
 			trackText.ID = i;
 			grpTexts.add(trackText);
 		}
@@ -130,7 +134,7 @@ class MusicPlayerState extends backend.MusicBeatState
 		flixel.util.FlxSpriteUtil.drawRect(btnCreatePlaylist, 0, 0, 210, 50, FlxColor.TRANSPARENT, {color: 0xFFBF55EC, thickness: 4});
 		add(btnCreatePlaylist);
 
-		txtCreatePlaylist = new FlxText(510, 42, 210, "CREATE PLAYLIST", 18);
+		txtCreatePlaylist = new FlxText(510, 42, 210, "FAVORITES MODE", 18);
 		txtCreatePlaylist.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, "center", flixel.text.FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(txtCreatePlaylist);
 
@@ -138,7 +142,7 @@ class MusicPlayerState extends backend.MusicBeatState
 		flixel.util.FlxSpriteUtil.drawRect(btnShare, 0, 0, 130, 50, FlxColor.TRANSPARENT, {color: 0xFFBF55EC, thickness: 4});
 		add(btnShare);
 
-		txtShare = new FlxText(1020, 42, 130, "SHARE", 18);
+		txtShare = new FlxText(1020, 42, 130, "ADD TO FAV", 18);
 		txtShare.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, "center", flixel.text.FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(txtShare);
 
@@ -158,7 +162,7 @@ class MusicPlayerState extends backend.MusicBeatState
 		pitchText.setFormat(Paths.font("vcr.ttf"), 18, 0xFFD2B4DE, "left");
 		add(pitchText);
 
-		modeText = new FlxText(680, 305, 250, "MODE: NORMAL", 18);
+		modeText = new FlxText(680, 305, 250, "MODE: ALL SONGS", 18);
 		modeText.setFormat(Paths.font("vcr.ttf"), 18, 0xFF00FF66, "left");
 		add(modeText);
 
@@ -170,15 +174,14 @@ class MusicPlayerState extends backend.MusicBeatState
 		opponentVocalsTxt.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, "left");
 		add(opponentVocalsTxt);
 
-		instrumentalTxt = new FlxText(680, 385, 400, "Insrumental: enabled", 18);
+		instrumentalTxt = new FlxText(680, 385, 400, "Instrumental: enabled", 18);
 		instrumentalTxt.setFormat(Paths.font("vcr.ttf"), 18, FlxColor.WHITE, "left");
 		add(instrumentalTxt);
 
-		volumeTxt = new FlxText(680, 420, 500, "VOLUME: 1", 28);
+		volumeTxt = new FlxText(680, 420, 500, "VOLUME: 1.0", 28);
 		volumeTxt.setFormat(Paths.font("vcr.ttf"), 28, FlxColor.WHITE, "left", flixel.text.FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		add(volumeTxt);
 
-		// ИСПРАВЛЕНО: Сдвинули helpText под квадрат на Y=625 и скрыли по умолчанию!
 		helpText = new FlxText(658, 625, 574, "[W/S] Nav | [Arrows] Skip 10s | [Click Timebar] Seek\n[Q/E] Pitch | [L] Loop | [H] Shuffle | [R] Reset Track\n[Space] press to pause/unpause | [1/2/3] Toggle stems", 12);
 		helpText.setFormat(Paths.font("vcr.ttf"), 12, 0xFFBF55EC, "center", flixel.text.FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		helpText.visible = false;
@@ -200,6 +203,17 @@ class MusicPlayerState extends backend.MusicBeatState
 		iconPlayer.scale.x = -1;
 		add(iconPlayer);
 
+		spectrumGroup = new FlxTypedGroup<FlxSprite>();
+		add(spectrumGroup);
+
+		for (i in 0...16) {
+			var bar = new FlxSprite(680 + (i * 33), 460).makeGraphic(25, 140, 0xFFBF55EC);
+			bar.scrollFactor.set();
+			bar.origin.y = bar.height;
+			spectrumGroup.add(bar);
+			spectrumBars.push(bar);
+		}
+
 		#if mobile
 		touchPad = new mobile.objects.TouchPad("FULL", "A_B_C_D_E");
 		add(touchPad);
@@ -220,6 +234,7 @@ class MusicPlayerState extends backend.MusicBeatState
 
 	private function scanAvailableSoundtracks():Void
 	{
+		playlist.clear();
 		playlist.push({name: "freaky menu", folder: "freakyMenu", bpm: 102, playerIcon: "bf", opponentIcon: "dad"});
 
 		var songsPath:String = "assets/songs/";
@@ -241,22 +256,23 @@ class MusicPlayerState extends backend.MusicBeatState
 
 	private function changeTrackSelection(change:Int = 0):Void
 	{
-		curSelected = FlxMath.wrap(curSelected + change, 0, playlist.length - 1);
+		var currentList = customPlaylistMode ? customPlaylist : playlist;
+		if (currentList.length == 0) return;
+
+		curSelected = FlxMath.wrap(curSelected + change, 0, currentList.length - 1);
 		
-		var track = playlist[curSelected];
+		var track = currentList[curSelected];
 		currentTrackTitle.text = track.name.toUpperCase();
 		
 		var calculatedBPM:Float = track.bpm * currentPitch;
 		bpmText.text = "BPM: " + FlxMath.roundDecimal(calculatedBPM, 0);
 		beatInterval = (60 / calculatedBPM) * 1000;
 
-		// Снежная анимация отскока заголовка трека
 		currentTrackTitle.scale.set(1.3, 1.3);
 		currentTrackTitle.angle = change > 0 ? 12 : -12;
 		FlxTween.tween(currentTrackTitle.scale, {x: 1.0, y: 1.0}, 0.4, {ease: FlxEase.elasticOut});
 		FlxTween.tween(currentTrackTitle, {angle: 0}, 0.4, {ease: FlxEase.elasticOut});
 
-		// Обновление иконок на панели управления
 		remove(iconPlayer); remove(iconOpponent);
 		iconPlayer = new objects.HealthIcon(track.playerIcon, true);
 		iconPlayer.setPosition(1050, 260);
@@ -266,6 +282,10 @@ class MusicPlayerState extends backend.MusicBeatState
 		iconOpponent = new objects.HealthIcon(track.opponentIcon, false);
 		iconOpponent.setPosition(930, 260);
 		add(iconOpponent);
+
+		if (txtShare != null) {
+			txtShare.text = customPlaylistMode ? "REMOVE FAV" : "ADD TO FAV";
+		}
 	}
 
 	private function playSelectedTrackAudio():Void
@@ -274,7 +294,10 @@ class MusicPlayerState extends backend.MusicBeatState
 		vocalsPlayer.stop();
 		vocalsOpponent.stop();
 
-		var track = playlist[curSelected];
+		var currentList = customPlaylistMode ? customPlaylist : playlist;
+		if (currentList.length == 0) return;
+
+		var track = currentList[curSelected];
 		var songFolder:String = 'assets/songs/' + track.folder;
 		var audioExts:Array<String> = ['.ogg', '.wav', '.mp3'];
 		
@@ -355,33 +378,49 @@ class MusicPlayerState extends backend.MusicBeatState
 		super.update(elapsed);
 		runtimeTimer += elapsed;
 		textPulseTimer += elapsed * 5;
+		nextWaveTimer += elapsed * 12;
 
 		if (FlxG.sound.music != null && FlxG.sound.music.playing) {
 			backend.Conductor.songPosition = FlxG.sound.music.time;
 			
 			if(vocalsPlayer.active && Math.abs(vocalsPlayer.time - FlxG.sound.music.time) > 20) vocalsPlayer.time = FlxG.sound.music.time;
 			if(vocalsOpponent.active && Math.abs(vocalsOpponent.time - FlxG.sound.music.time) > 20) vocalsOpponent.time = FlxG.sound.music.time;
+
+			for (i in 0...spectrumBars.length) {
+				var wave:Float = Math.sin(nextWaveTimer + (i * 0.7)) * 40;
+				var soundPulse:Float = 0;
+				if (vocalsPlayer.active && vocalsPlayer.playing) soundPulse += Math.abs(Math.sin(vocalsPlayer.time * 0.01));
+				if (vocalsOpponent.active && vocalsOpponent.playing) soundPulse += Math.abs(Math.cos(vocalsOpponent.time * 0.01));
+				
+				var targetHeight:Float = Math.max(10, 35 + (wave * (soundPulse > 0 ? soundPulse : 0.45)));
+				spectrumBars[i].scale.y = FlxMath.lerp(spectrumBars[i].scale.y, targetHeight / 140, FlxMath.bound(elapsed * 15, 0, 1));
+			}
+		} else {
+			for (bar in spectrumBars)
+				bar.scale.y = FlxMath.lerp(bar.scale.y, 10 / 140, FlxMath.bound(elapsed * 8, 0, 1));
 		}
 
+		var currentList = customPlaylistMode ? customPlaylist : playlist;
 		visualScrollY = FlxMath.lerp(visualScrollY, curSelected * 70, FlxMath.bound(elapsed * 10, 0, 1));
 		
 		for (txt in grpTexts.members) {
 			txt.y = (FlxG.height / 2) - visualScrollY + (txt.ID * 70) - 40;
 			
-			if (txt.ID == curSelected) {
-				txt.text = "> " + playlist[txt.ID].name.toUpperCase() + " <";
+			if (currentList.length > txt.ID && txt.ID == curSelected) {
+				txt.text = "> " + currentList[txt.ID].name.toUpperCase() + " <";
 				txt.color = 0xFFBF55EC;
 				txt.alpha = 1.0;
 				var pulse:Float = 1.0 + (Math.sin(textPulseTimer) * 0.03);
 				txt.scale.set(pulse, pulse);
-			} else {
-				txt.text = playlist[txt.ID].name.toLowerCase();
+			} else if (currentList.length > txt.ID) {
+				txt.text = currentList[txt.ID].name.toLowerCase();
 				txt.color = FlxColor.WHITE;
 				txt.scale.set(1.0, 1.0);
 				txt.alpha = FlxMath.bound(1.0 - (Math.abs(txt.ID - curSelected) * 0.3), 0.1, 0.8);
+			} else {
+				txt.text = "";
 			}
 		}
-
 		if (FlxG.mouse.pressed && FlxG.mouse.x >= timeBarBg.x && FlxG.mouse.x <= (timeBarBg.x + timeBarBg.width) &&
 			FlxG.mouse.y >= timeBarBg.y && FlxG.mouse.y <= (timeBarBg.y + timeBarBg.height))
 		{
@@ -395,10 +434,48 @@ class MusicPlayerState extends backend.MusicBeatState
 		}
 
 		if (FlxG.mouse.justPressed && FlxG.mouse.overlaps(btnCreatePlaylist)) {
-			FlxG.sound.play(Paths.sound('confirmMenu'), 0.6);
-			txtCreatePlaylist.color = 0xFF00FF66;
-			FlxTween.tween(txtCreatePlaylist, {color: FlxColor.WHITE}, 0.5);
-			trace("[JUKEBOX]: Dynamic custom compilation profile generated inside CacheSystem.");
+			FlxG.sound.play(Paths.sound('scrollMenu'), 0.6);
+			customPlaylistMode = !customPlaylistMode;
+			curSelected = 0;
+			modeText.text = customPlaylistMode ? "MODE: FAVORITES" : "MODE: ALL SONGS";
+			modeText.color = customPlaylistMode ? 0xFFFF58B4 : 0xFF00FF66;
+			
+			grpTexts.clear();
+			var currentList = customPlaylistMode ? customPlaylist : playlist;
+			for (i in 0...currentList.length) {
+				var trackText:FlxText = new FlxText(60, 0, 550, currentList[i].name.toLowerCase(), 36);
+				trackText.setFormat(Paths.font("vcr.ttf"), 36, FlxColor.WHITE, "left", flixel.text.FlxTextBorderStyle.OUTLINE, 0xFF0D021A);
+				trackText.ID = i;
+				grpTexts.add(trackText);
+			}
+			changeTrackSelection(0);
+		}
+			if (FlxG.mouse.justPressed && FlxG.mouse.overlaps(btnShare)) {
+			var currentList = customPlaylistMode ? customPlaylist : playlist;
+			if (currentList.length > curSelected) {
+				var track = currentList[curSelected];
+
+				if (!customPlaylistMode) {
+					if (!customPlaylist.contains(track)) {
+						customPlaylist.push(track);
+						FlxG.sound.play(Paths.sound('confirmMenu'), 0.5);
+						txtShare.color = 0xFF00FF66;
+						FlxTween.tween(txtShare, {color: FlxColor.WHITE}, 0.4);
+					}
+				} else {
+					customPlaylist.remove(track);
+					FlxG.sound.play(Paths.sound('cancelMenu'), 0.5);
+
+					grpTexts.clear();
+					for (i in 0...customPlaylist.length) {
+						var trackText:FlxText = new FlxText(60, 0, 550, customPlaylist[i].name.toLowerCase(), 36);
+						trackText.setFormat(Paths.font("vcr.ttf"), 36, FlxColor.WHITE, "left", flixel.text.FlxTextBorderStyle.OUTLINE, 0xFF0D021A);
+						trackText.ID = i;
+						grpTexts.add(trackText);
+					}
+					changeTrackSelection(0);
+				}
+			}
 		}
 
 		if (FlxG.sound.music != null) {
@@ -414,7 +491,6 @@ class MusicPlayerState extends backend.MusicBeatState
 
 		drawDynamicNeonGrid();
 
-		// Подсказки показываются СТРОГО при зажатой клавише F1
 		helpText.visible = FlxG.keys.pressed.F1;
 
 		var navUp = FlxG.keys.justPressed.W || FlxG.keys.justPressed.UP #if mobile || touchPad.buttonUp.justPressed #end;
@@ -442,6 +518,64 @@ class MusicPlayerState extends backend.MusicBeatState
 		var skipLeft = FlxG.keys.justPressed.LEFT #if mobile || touchPad.buttonLeft.justPressed #end;
 		var skipRight = FlxG.keys.justPressed.RIGHT #if mobile || touchPad.buttonRight.justPressed #end;
 
+		#if mobile
+		if (FlxG.mouse.justPressed && FlxG.mouse.x < 640) {
+			for (txt in grpTexts.members) {
+				if (txt != null && txt.visible && FlxG.mouse.overlaps(txt)) {
+					if (txt.ID == curSelected) {
+						playSelectedTrackAudio();
+					} else {
+						changeTrackSelection(txt.ID - curSelected);
+					}
+					break;
+				}
+			}
+		}
+
+		if (mobile.backend.SwipeUtil.swipeUp) changeTrackSelection(1);
+		if (mobile.backend.SwipeUtil.swipeDown) changeTrackSelection(-1);
+
+		if (touchPad.buttonD.justPressed) {
+			currentPitch = FlxMath.bound(currentPitch - 0.05, 0.5, 2.0);
+			if(FlxG.sound.music != null) FlxG.sound.music.pitch = currentPitch;
+			vocalsPlayer.pitch = currentPitch; vocalsOpponent.pitch = currentPitch;
+			pitchText.text = "SPEED: " + FlxMath.roundDecimal(currentPitch, 2) + "x";
+			bpmText.text = "BPM: " + FlxMath.roundDecimal(currentList[curSelected].bpm * currentPitch, 0);
+		}
+		if (touchPad.buttonE.justPressed) {
+			currentPitch = FlxMath.bound(currentPitch + 0.05, 0.5, 2.0);
+			if(FlxG.sound.music != null) FlxG.sound.music.pitch = currentPitch;
+			vocalsPlayer.pitch = currentPitch; vocalsOpponent.pitch = currentPitch;
+			pitchText.text = "SPEED: " + FlxMath.roundDecimal(currentPitch, 2) + "x";
+			bpmText.text = "BPM: " + FlxMath.roundDecimal(currentList[curSelected].bpm * currentPitch, 0);
+		}
+
+		if (FlxG.mouse.justPressed) {
+			if (FlxG.mouse.overlaps(instrumentalTxt)) {
+				instrumentalEnabled = !instrumentalEnabled;
+				instrumentalTxt.text = "Instrumental: " + (instrumentalEnabled ? "enabled" : "disabled");
+				if(FlxG.sound.music != null) FlxG.sound.music.volume = instrumentalEnabled ? currentVolume : 0;
+				FlxG.sound.play(Paths.sound('scrollMenu'), 0.5);
+			}
+			else if (FlxG.mouse.overlaps(opponentVocalsTxt) && opponentVocalsTxt.text != "") {
+				opponentVocalsEnabled = !opponentVocalsEnabled;
+				opponentVocalsTxt.text = "Opponent vocals: " + (opponentVocalsEnabled ? "enabled" : "disabled");
+				vocalsOpponent.volume = opponentVocalsEnabled ? currentVolume : 0;
+				FlxG.sound.play(Paths.sound('scrollMenu'), 0.5);
+			}
+			else if (FlxG.mouse.overlaps(playerVocalsTxt)) {
+				playerVocalsEnabled = !playerVocalsEnabled;
+				if (opponentVocalsTxt.text == "") {
+					playerVocalsTxt.text = "Vocals: " + (playerVocalsEnabled ? "enabled" : "disabled");
+				} else {
+					playerVocalsTxt.text = "Player vocals: " + (playerVocalsEnabled ? "enabled" : "disabled");
+				}
+				vocalsPlayer.volume = playerVocalsEnabled ? currentVolume : 0;
+				FlxG.sound.play(Paths.sound('scrollMenu'), 0.5);
+			}
+		}
+		#end
+
 		if (navUp) changeTrackSelection(-1);
 		if (navDown) changeTrackSelection(1);
 		if (actionAccept) playSelectedTrackAudio();
@@ -461,17 +595,17 @@ class MusicPlayerState extends backend.MusicBeatState
 
 		if (FlxG.keys.justPressed.ONE #if mobile || touchPad.buttonB.justPressed #end) {
 			instrumentalEnabled = !instrumentalEnabled;
-			instrumentalTxt.text = "insrumental: " + (instrumentalEnabled ? "enabled" : "disabled");
+			instrumentalTxt.text = "Instrumental: " + (instrumentalEnabled ? "enabled" : "disabled");
 			if(FlxG.sound.music != null) FlxG.sound.music.volume = instrumentalEnabled ? currentVolume : 0;
 		}
 		if (FlxG.keys.justPressed.TWO #if mobile || touchPad.buttonC.justPressed #end) {
 			opponentVocalsEnabled = !opponentVocalsEnabled;
-			opponentVocalsTxt.text = "opponent vocals: " + (opponentVocalsEnabled ? "enabled" : "disabled");
+			opponentVocalsTxt.text = "Opponent vocals: " + (opponentVocalsEnabled ? "enabled" : "disabled");
 			vocalsOpponent.volume = opponentVocalsEnabled ? currentVolume : 0;
 		}
 		if (FlxG.keys.justPressed.THREE #if mobile || touchPad.buttonD.justPressed #end) {
 			playerVocalsEnabled = !playerVocalsEnabled;
-			playerVocalsTxt.text = "player vocals: " + (playerVocalsEnabled ? "enabled" : "disabled");
+			playerVocalsTxt.text = "Player vocals: " + (playerVocalsEnabled ? "enabled" : "disabled");
 			vocalsPlayer.volume = playerVocalsEnabled ? currentVolume : 0;
 		}
 
@@ -494,14 +628,14 @@ class MusicPlayerState extends backend.MusicBeatState
 			if(FlxG.sound.music != null) FlxG.sound.music.pitch = currentPitch;
 			vocalsPlayer.pitch = currentPitch; vocalsOpponent.pitch = currentPitch;
 			pitchText.text = "SPEED: " + FlxMath.roundDecimal(currentPitch, 2) + "x";
-			bpmText.text = "BPM: " + FlxMath.roundDecimal(playlist[curSelected].bpm * currentPitch, 0);
+			bpmText.text = "BPM: " + FlxMath.roundDecimal(currentList[curSelected].bpm * currentPitch, 0);
 		}
 		if (FlxG.keys.justPressed.E) {
 			currentPitch = FlxMath.bound(currentPitch + 0.05, 0.5, 2.0);
 			if(FlxG.sound.music != null) FlxG.sound.music.pitch = currentPitch;
 			vocalsPlayer.pitch = currentPitch; vocalsOpponent.pitch = currentPitch;
 			pitchText.text = "SPEED: " + FlxMath.roundDecimal(currentPitch, 2) + "x";
-			bpmText.text = "BPM: " + FlxMath.roundDecimal(playlist[curSelected].bpm * currentPitch, 0);
+			bpmText.text = "BPM: " + FlxMath.roundDecimal(currentList[curSelected].bpm * currentPitch, 0);
 		}
 
 		if (FlxG.keys.justPressed.L) {
@@ -519,7 +653,7 @@ class MusicPlayerState extends backend.MusicBeatState
 			if (loopMode) {
 				FlxG.sound.music.time = 0;
 			} else if (shuffleMode) {
-				changeTrackSelection(FlxG.random.int(1, playlist.length - 1));
+				changeTrackSelection(FlxG.random.int(1, currentList.length - 1));
 				playSelectedTrackAudio();
 			} else {
 				changeTrackSelection(1);
@@ -565,21 +699,63 @@ class MusicPlayerState extends backend.MusicBeatState
 	private function getTrackMetaInfo(songFolder:String):{bpm:Float, p1:String, p2:String}
 	{
 		var defaultMeta = {bpm: 125.0, p1: "bf", p2: "dad"};
+		var formattedFolder:String = Paths.formatToSongPath(songFolder);
 		
-		var path:String = 'assets/data/' + songFolder + '/' + songFolder + '.json';
+		var potentialPaths:Array<String> = [
+			'assets/shared/data/' + formattedFolder + '/' + formattedFolder + '-normal.json',
+			'assets/shared/data/' + formattedFolder + '/' + formattedFolder + '.json',
+			'assets/shared/data/' + formattedFolder + '/metadata.json'
+		];
 
-		if (sys.FileSystem.exists(path)) {
+		#if MODS_ALLOWED
+		try {
+			if (sys.FileSystem.exists('mods/')) {
+				for (mod in sys.FileSystem.readDirectory('mods/')) {
+					if (sys.FileSystem.isDirectory('mods/' + mod)) {
+						potentialPaths.push('mods/' + mod + '/data/' + formattedFolder + '/' + formattedFolder + '-normal.json');
+						potentialPaths.push('mods/' + mod + '/data/' + formattedFolder + '/' + formattedFolder + '.json');
+						potentialPaths.push('mods/' + mod + '/data/' + formattedFolder + '/metadata.json');
+					}
+				}
+			}
+			potentialPaths.push('mods/data/' + formattedFolder + '/' + formattedFolder + '-normal.json');
+			potentialPaths.push('mods/data/' + formattedFolder + '/' + formattedFolder + '.json');
+		} catch(e:Dynamic) {}
+		#end
+
+		var finalPath:String = "";
+		for (path in potentialPaths) {
+			if (sys.FileSystem.exists(path) && !sys.FileSystem.isDirectory(path)) {
+				finalPath = path;
+				break;
+			}
+		}
+
+		if (finalPath != "") {
 			try {
-				var content:String = sys.io.File.getContent(path);
+				var content:String = sys.io.File.getContent(finalPath);
 				var parsed = haxe.Json.parse(content);
 				
-				if (parsed != null && parsed.song != null) {
-					var songData = parsed.song;
-					
-					var targetBPM:Float = songData.bpm != null ? cast(songData.bpm, Float) : 125.0;
-					var charP1:String = songData.player1 != null ? songData.player1 : "bf";
-					var charP2:String = songData.player2 != null ? songData.player2 : "dad";
-					
+				if (parsed != null) {
+					var targetBPM:Float = 125.0;
+					var charP1:String = "bf";
+					var charP2:String = "dad";
+
+					if (parsed.playData != null && parsed.timeChanges != null) {
+						if (parsed.timeChanges[0] != null && parsed.timeChanges[0].bpm != null)
+							targetBPM = cast(parsed.timeChanges[0].bpm, Float);
+						if (parsed.playData.characters != null) {
+							charP1 = parsed.playData.characters.player ?? "bf";
+							charP2 = parsed.playData.characters.opponent ?? "dad";
+						}
+					}
+					else if (parsed.song != null) {
+						var songData = parsed.song;
+						targetBPM = songData.bpm != null ? cast(songData.bpm, Float) : 125.0;
+						charP1 = songData.player1 != null ? songData.player1 : "bf";
+						charP2 = songData.player2 != null ? songData.player2 : "dad";
+					}
+
 					var playerIconName:String = charP1;
 					var opponentIconName:String = charP2;
 					
@@ -595,14 +771,10 @@ class MusicPlayerState extends backend.MusicBeatState
 						if (charJson.healthicon != null) opponentIconName = charJson.healthicon;
 					}
 
-					return {
-						bpm: targetBPM,
-						p1: playerIconName,
-						p2: opponentIconName
-					};
+					return {bpm: targetBPM, p1: playerIconName, p2: opponentIconName};
 				}
 			} catch(e:Dynamic) {
-				trace("[TIMELESS METADATA CRASH]: Failed to parse Psych SwagSong structural layout.");
+				trace("[TIMELESS METADATA CRASH]: Failed to extract structural BPM values.");
 			}
 		}
 		return defaultMeta;

@@ -11,7 +11,7 @@ echo.
 echo ===================================================
 echo [Timeless Engine] Compiling...
 echo ===================================================
-call lime build android
+call lime build android -release
 
 echo.
 echo ===================================================

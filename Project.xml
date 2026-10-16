@@ -264,12 +264,10 @@
 	<haxelib name="flxanimate" />
 
 	<!-- timeless shit -->
-	<source path="C:/HaxeToolkit/haxe/lib/hxpy/2,0,0" if="cpp" />
-	<!-- <source path="C:/HaxeToolkit/haxe/lib/linc_quickjs" if="cpp" /> -->
-	
+	<source path="C:/HaxeToolkit/haxe/lib/hxpy/2,0,0" if="windows" />
+
 	<!-- hxcpp -->
-	<haxelib name="hxpy" if="cpp" />
-	<!-- <haxelib name="linc_quickjs" if="cpp" /> -->
+	<haxelib name="hxpy" if="windows" />
 	
 	<section if="windows">
 		<config:windows compiler="msvc" />
@@ -414,8 +412,7 @@
 
 	<haxedef name="hscriptPos" if="HSCRIPT_ALLOWED" />
 
-	<haxedef name="HXPY_ALLOWED" if="hxpy" />
-	<!-- <haxedef name="QUICKJS_ALLOWED" if="linc_quickjs" /> -->
+	<haxedef name="HXPY_ALLOWED" if="windows" />
 
 	<!-- _________________________________ Custom _______________________________ -->
 

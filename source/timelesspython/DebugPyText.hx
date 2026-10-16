@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 class DebugPyText extends FlxText
 {
     public var disableTime:Float = 6;
@@ -19,3 +20,4 @@ class DebugPyText extends FlxText
         if(alpha == 0 || y >= FlxG.height) kill();
     }
 }
+#end

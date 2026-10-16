@@ -125,7 +125,7 @@ class InitState extends MusicBeatState
 		if (ClientPrefs.data.checkForUpdates)
 		{
 			trace('checking for update');
-			var http = new haxe.Http("https://raw.githubusercontent.com/therealmerlow-hub/Timeless-Engine/refs/heads/main/version.txt");
+			var http = new haxe.Http("https://raw.githubusercontent.com/timelessdevs/Timeless-Engine/refs/heads/main/version.txt");
 
 			http.onData = function(data:String)
 			{

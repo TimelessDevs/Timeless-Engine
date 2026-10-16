@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 import flixel.FlxG;
 import flixel.FlxObject;
 import states.PlayState;
@@ -104,3 +105,4 @@ class CustomSubstate extends MusicBeatSubstate
 		super.destroy();
 	}
 }
+#end

@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 #if (!flash && sys)
 import flixel.addons.display.FlxRuntimeShader;
 #end
@@ -326,3 +327,4 @@ set_shader_float_list = setShaderFloatArray
 	}
 	#end
 }
+#end

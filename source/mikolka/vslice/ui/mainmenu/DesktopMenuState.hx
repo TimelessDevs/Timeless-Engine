@@ -185,7 +185,7 @@ class DesktopMenuState extends FlxBasic
 
 				selectedSomethin = true;
 				FlxG.sound.play(Paths.sound('cancelMenu'));
-				MusicBeatState.switchState(new TitleState());
+				MusicBeatState.switchState(new mikolka.vslice.ui.title.TitleState());
 			}
 
 			if (host.controls.ACCEPT)

@@ -1,5 +1,6 @@
 package timelesspython;
 
+#if windows
 class TextFunctions
 {
 	public static function implement(pyFunk:TimePython)
@@ -200,3 +201,4 @@ class TextFunctions
 		});
 	}
 }
+#end
