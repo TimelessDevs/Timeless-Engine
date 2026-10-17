@@ -101,7 +101,7 @@ class ShadersState extends backend.MusicBeatState
 		map.set("this", this);
 		map.set("exitToMainMenu", function() {
 			flixel.FlxG.sound.play(backend.Paths.sound('cancelMenu'));
-			backend.MusicBeatState.switchState(new states.MainMenuState());
+			backend.MusicBeatState.switchState(new mikolka.vslice.ui.MainMenuState());
 		});
 	}
 
@@ -223,7 +223,7 @@ class ShadersState extends backend.MusicBeatState
 
 		if (FlxG.keys.justPressed.ESCAPE) {
 			flixel.FlxG.sound.play(backend.Paths.sound('cancelMenu'));
-			backend.MusicBeatState.switchState(new states.MainMenuState());
+			backend.MusicBeatState.switchState(new mikolka.vslice.ui.MainMenuState());
 		}
 	}
 

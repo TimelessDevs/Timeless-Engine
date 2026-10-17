@@ -133,12 +133,12 @@ options_graphics: "Grafika"
 options_language: "Jezyk"
 options_mobile_options: "Sterowanie mobilne"
 options_v-slice_options: "V-Slice"
-options_p-slice_options: Ustawienia P-Slice
+options_Timeless Engine_options: Ustawienia Timeless Engine
 
 graphics_menu: "Ustawienia Graficzne"
 visuals_menu: "Ustawienia wygladu"
 gameplay_menu: "Ustawienia gry"
-vslice_menu: "Ustawienia P-Slice"
+vslice_menu: "Ustawienia Timeless Engine"
 
 // Note Colors Menu
 note_colors_tip: "Wciśnij RESET aby zresetować wybraną strzałkę"
@@ -249,7 +249,7 @@ setting_pause_music: "Pause Music:"
 setting_pause_music-none: "None"
 description_pause_screen_song: "Wybierz utwor do uzycia jako muzyki w menu pauzy."
 setting_check_for_updates: "Check for Updates"
-description_check_for_updates: "Wyswietli infotmacje o aktualizacji do P-Slice (jesli taka jest)"
+description_check_for_updates: "Wyswietli infotmacje o aktualizacji do Timeless Engine (jesli taka jest)"
 setting_discord_rich_presence: "Discord Rich Presence"
 description_discord_rich_presence: "Po zaznaczeniu, pokae twoim znajomym do Discordzie w co grasz!"
 setting_combo_stacking: "Combo Stacking"

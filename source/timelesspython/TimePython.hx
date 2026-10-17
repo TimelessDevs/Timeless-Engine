@@ -123,9 +123,13 @@ class TimePython {
 		
 		this.scriptName = scriptName.trim();
 		this.scriptFile = scriptName;
-        if (!Py.isInitialized()) {
-            Py.initialize();
-        }
+		if (!Py.isInitialized()) {
+			Py.initialize();
+
+			#if windows
+			hxpy.PyRun.simpleString("import sys; sys.path.insert(0, './timepython/'); sys.path.append('./timepython/')");
+			#end
+		}
 		this.lastSlash = this.scriptFile.lastIndexOf("/");
 		if (this.lastSlash == -1) this.lastSlash = this.scriptFile.lastIndexOf("\\");
 		this.lastDot = scriptFile.lastIndexOf(".");

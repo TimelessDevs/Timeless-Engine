@@ -41,7 +41,7 @@ class ScriptState extends backend.MusicBeatState
 				hscript.set("this", this);
 				
 				hscript.set("goBackToMainMenu", function() {
-					backend.MusicBeatState.switchState(new states.MainMenuState());
+					backend.MusicBeatState.switchState(new mikolka.vslice.ui.MainMenuState());
 				});
 
 				if (hscript.exists("onCreate")) {
@@ -50,11 +50,11 @@ class ScriptState extends backend.MusicBeatState
 				trace("[SCRIPT STATE]: Successfully initialized custom state screen -> " + scriptName);
 			} catch(e:Dynamic) {
 				trace("[SCRIPT STATE CRASH]: Failed to parse custom state: " + e);
-				backend.MusicBeatState.switchState(new states.MainMenuState());
+				backend.MusicBeatState.switchState(new mikolka.vslice.ui.MainMenuState());
 			}
 		} else {
 			trace("[SCRIPT STATE ERROR]: Hx script state file not found at " + path);
-			backend.MusicBeatState.switchState(new states.MainMenuState());
+			backend.MusicBeatState.switchState(new mikolka.vslice.ui.MainMenuState());
 		}
 
 		super.create();

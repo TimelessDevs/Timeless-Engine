@@ -77,7 +77,7 @@ class NativeFileSystem
 				return BitmapData.fromTexture(texture,true);
 			}
 			else{#end
-				var result = BitmapData.fromFile(sys_path);
+				var result = openfl.display.BitmapData.fromFile(sys_path);
 				return result;
 			#if ATSC_SUPPORT}#end
 		}

@@ -46,6 +46,9 @@ class Nametag extends FlxSprite
       }
 
       loadGraphic(Paths.image('charSelect/' + path + "Nametag"));
+
+      antialiasing = backend.ClientPrefs.data.antialiasing;
+
       updateHitbox();
       scale.x = scale.y = 0.77;
 

@@ -69,11 +69,11 @@ class CharSelectSubState extends MusicBeatSubState
 	var selectTimer:FlxTimer = new FlxTimer();
 	var allowInput:Bool = false;
 
-	var selectSound:FlxSound;
-	var unlockSound:FlxSound;
-	var lockedSound:FlxSound;
-	var introSound:FlxSound;
-	var staticSound:FlxSound;
+	var selectSound:FunkinSound;
+	var unlockSound:FunkinSound;
+	var lockedSound:FunkinSound;
+	var introSound:FunkinSound;
+	var staticSound:FunkinSound;
 
 	#if TOUCH_CONTROLS_ALLOWED
 	var touchKeys:Array<TouchZone>;
@@ -304,17 +304,32 @@ class CharSelectSubState extends MusicBeatSubState
 		grpCursors.add(cursorBlue);
 		grpCursors.add(chrSelectCursor);
 
-		selectSound = FlxG.sound.load(Paths.sound('CS_select'), 0.7);
-		unlockSound = FlxG.sound.load(Paths.sound('CS_unlock'), 0);
-		unlockSound.play(true);
-
-		lockedSound = FlxG.sound.load(Paths.sound('CS_locked'), 1);
-		staticSound = FlxG.sound.load(Paths.sound('static loop'), 0.6, true);
-
+		selectSound = FunkinSound.load(Paths.sound('CS_select'), 0.7);
+		selectSound.pitch = 1;
+		FlxG.sound.defaultSoundGroup.add(selectSound);
 		FlxG.sound.list.add(selectSound);
+
+		unlockSound = FunkinSound.load(Paths.sound('CS_unlock'), 0);
+		unlockSound.pitch = 1;
+		unlockSound.play(true);
+		FlxG.sound.defaultSoundGroup.add(unlockSound);
 		FlxG.sound.list.add(unlockSound);
+
+		lockedSound = FunkinSound.load(Paths.sound('CS_locked'), 1);
+		lockedSound.pitch = 1;
+		FlxG.sound.defaultSoundGroup.add(lockedSound);
 		FlxG.sound.list.add(lockedSound);
+
+		staticSound = FunkinSound.load(Paths.sound('static loop'), 0.6, true);
+		staticSound.pitch = 1;
+		FlxG.sound.defaultSoundGroup.add(staticSound);
 		FlxG.sound.list.add(staticSound);
+
+		FunkinSound.playMusic('stayFunky', {
+			startingVolume: 0,
+			overrideExisting: true,
+			restartTrack: true,
+		});
 
 		FreeplayHelpers.BPM = 90;
 		initLocks();
@@ -362,7 +377,7 @@ class CharSelectSubState extends MusicBeatSubState
 		blackScreen.x = blackScreen.y = -(FlxG.width * 0.5);
 		add(blackScreen);
 
-		introSound = FlxG.sound.load(Paths.sound('CS_Lights'), 0);
+		introSound = FunkinSound.load(Paths.sound('CS_Lights'), 0);
 		FlxG.sound.list.add(introSound);
 
 		#if (TOUCH_CONTROLS_ALLOWED && MODS_ALLOWED)
@@ -401,21 +416,27 @@ class CharSelectSubState extends MusicBeatSubState
 	function checkNewChar():Void
 	{
 		if (nonLocks.length > 0)
-		{
 			selectTimer.start(2, (_) -> unLock());
-		}
 		else
 		{
-			FlxG.sound.playMusic(Paths.music('stayFunky'), 1, true);
-			allowInput = true;
-			if (modSelector != null) modSelector.allowInput = true;
+			FunkinSound.playMusic('stayFunky', {
+				startingVolume: 1,
+				overrideExisting: true,
+				restartTrack: true,
+				onLoad: function()
+				{
+					allowInput = true;
+					if (modSelector != null)
+						modSelector.allowInput = true;
 
-			@:privateAccess {
-				gfChill.analyzer = new SpectralAnalyzer(ModsHelper.getSoundChannel(FlxG.sound.music), 7, 0.1);
-				#if (desktop || mobile)
-				gfChill.analyzer.fftN = 512;
-				#end
-			}
+					@:privateAccess
+					gfChill.analyzer = new SpectralAnalyzer(ModsHelper.getSoundChannel(FlxG.sound.music), 7, 0.1);
+					#if (desktop || mobile)
+					@:privateAccess
+					gfChill.analyzer.fftN = 512;
+					#end
+				}
+			});
 		}
 	}
 
@@ -627,8 +648,15 @@ class CharSelectSubState extends MusicBeatSubState
 
 	override public function update(elapsed:Float):Void
 	{
+		var changedPos:Bool = false;
+
 		controls.isInSubstate = true;
 		super.update(elapsed);
+
+		if (FlxG.sound.music != null && FlxG.sound.music.playing)
+			backend.Conductor.songPosition = FlxG.sound.music.time;
+		else
+			backend.Conductor.songPosition += elapsed * 1000;
 
 		if (controls.UI_UP_R || controls.UI_DOWN_R || controls.UI_LEFT_R || controls.UI_RIGHT_R)
 			selectSound.pitch = 1;
@@ -646,21 +674,24 @@ class CharSelectSubState extends MusicBeatSubState
 			if (controls.UI_RIGHT) holdTmrRight += elapsed;
 			if (controls.UI_RIGHT_R) { holdTmrRight = 0; spamRight = false; }
 
-			if (holdTmrUp >= 0.5) spamUp = true;
-			if (holdTmrDown >= 0.5) spamDown = true;
-			if (holdTmrLeft >= 0.5) spamLeft = true;
-			if (holdTmrRight >= 0.5) spamRight = true;
+			var initSpam = 0.5;
+			if (holdTmrUp >= initSpam) spamUp = true;
+			if (holdTmrDown >= initSpam) spamDown = true;
+			if (holdTmrLeft >= initSpam) spamLeft = true;
+			if (holdTmrRight >= initSpam) spamRight = true;
 
-			if (controls.UI_UP_P) { cursorY--; cursorDenied.visible = false; holdTmrUp = 0; selectSound.play(true); }
-			if (controls.UI_DOWN_P) { cursorY++; cursorDenied.visible = false; holdTmrDown = 0; selectSound.play(true); }
-			if (controls.UI_LEFT_P) { cursorX--; cursorDenied.visible = false; holdTmrLeft = 0; selectSound.play(true); }
-			if (controls.UI_RIGHT_P) { cursorX++; cursorDenied.visible = false; holdTmrRight = 0; selectSound.play(true); }
+			if (controls.UI_UP_P) { cursorY -= 1; cursorDenied.visible = false; holdTmrUp = 0; changedPos = true; }
+			if (controls.UI_DOWN_P) { cursorY += 1; cursorDenied.visible = false; holdTmrDown = 0; changedPos = true; }
+			if (controls.UI_LEFT_P) { cursorX -= 1; cursorDenied.visible = false; holdTmrLeft = 0; changedPos = true; }
+			if (controls.UI_RIGHT_P) { cursorX += 1; cursorDenied.visible = false; holdTmrRight = 0; changedPos = true; }
 
 			if (controls.BACK)
 			{
 				wentBackToFreeplay = true;
-				FlxG.sound.play(Paths.sound('cancelMenu'));
-				FlxTween.tween(FlxG.sound.music, {volume: 0.0}, 0.7, {ease: FlxEase.quadInOut});
+				FunkinSound.playOnce(Paths.sound('cancelMenu'));
+				if (FlxG.sound.music != null) {
+					FlxTween.tween(FlxG.sound.music, {volume: 0.0}, 0.7, {ease: FlxEase.quadInOut});
+				}
 				goToFreeplay();
 			}
 		}
@@ -669,6 +700,10 @@ class CharSelectSubState extends MusicBeatSubState
 		if (cursorX > 1) { cursorX = -1; #if MODS_ALLOWED modArrows?.nextModPress(); #end }
 		if (cursorY < -1) cursorY = 1;
 		if (cursorY > 1) cursorY = -1;
+
+		if (changedPos) {
+			selectSound.play(true);
+		}
 
 		#if TOUCH_CONTROLS_ALLOWED
 		if (TouchUtil.pressed #if debug || FlxG.mouse.pressed #end)
@@ -750,8 +785,12 @@ class CharSelectSubState extends MusicBeatSubState
 			grpCursors.visible = false;
 
 			FlxG.sound.play(Paths.sound('CS_confirm'));
-			FlxTween.tween(FlxG.sound.music, {pitch: 0.1}, 1, {ease: FlxEase.quadInOut});
-			FlxTween.tween(FlxG.sound.music, {volume: 0.0}, 1.5, {ease: FlxEase.quadInOut});
+
+			if (FlxG.sound.music != null) {
+				FlxTween.tween(FlxG.sound.music, {pitch: 0.1}, 1, {ease: FlxEase.quadInOut});
+				FlxTween.tween(FlxG.sound.music, {volume: 0.0}, 1.5, {ease: FlxEase.quadInOut});
+			}
+
 			playerChill.playAnimation("select");
 			gfChill.playAnimation("confirm", true, false, true);
 			pressedSelect = true;
@@ -827,10 +866,12 @@ class CharSelectSubState extends MusicBeatSubState
 		super.stepHit();
 	}
 
+	var lastSpamStep:Int = -1;
 	function spamOnStep():Void
 	{
-		if (spamUp || spamDown || spamLeft || spamRight)
+		if ((spamUp || spamDown || spamLeft || spamRight) && curStep != lastSpamStep)
 		{
+			lastSpamStep = curStep;
 			if (selectSound.pitch > 5) selectSound.pitch = 5;
 			selectSound.play(true);
 			cursorDenied.visible = false;

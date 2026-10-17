@@ -1017,7 +1017,7 @@ class ModEditorState extends backend.MusicBeatState
 		var bgPath:String = 'mods/' + activeFolder + '/images/menubackgrounds/' + bgAsset + '.png';
 		if (bgAsset != "" && sys.FileSystem.exists(bgPath) && storyModeBg != null) {
 			try {
-				storyModeBg.pixels = openfl.display.BitmapData.fromFile(bgPath);
+				storyModeBg.pixels = openfl.display.openfl.display.BitmapData.fromFile(bgPath);
 				storyModeBg.setGraphicSize(885, 545);
 				storyModeBg.updateHitbox();
 			} catch(e:Dynamic) {}
@@ -1028,7 +1028,7 @@ class ModEditorState extends backend.MusicBeatState
 		var titlePath:String = 'mods/' + activeFolder + '/images/storymenu/' + titleAsset + '.png';
 		if (titleAsset != "" && sys.FileSystem.exists(titlePath) && storyWeekTitle != null) {
 			try {
-				storyWeekTitle.pixels = openfl.display.BitmapData.fromFile(titlePath);
+				storyWeekTitle.pixels = openfl.display.openfl.display.BitmapData.fromFile(titlePath);
 				storyWeekTitle.setGraphicSize(260);
 				storyWeekTitle.updateHitbox();
 			} catch(e:Dynamic) {}
@@ -1040,7 +1040,7 @@ class ModEditorState extends backend.MusicBeatState
 			var dadPath:String = 'mods/' + activeFolder + '/images/menucharacters/' + dadChar + '.png';
 			if (sys.FileSystem.exists(dadPath)) {
 				try {
-					storyCharDad.pixels = openfl.display.BitmapData.fromFile(dadPath);
+					storyCharDad.pixels = openfl.display.openfl.display.BitmapData.fromFile(dadPath);
 					storyCharDad.setGraphicSize(120);
 					storyCharDad.updateHitbox();
 				} catch(e:Dynamic) {}
@@ -1053,7 +1053,7 @@ class ModEditorState extends backend.MusicBeatState
 			var bfPath = 'mods/' + activeFolder + '/images/menucharacters/' + bfChar + '.png';
 			if (sys.FileSystem.exists(bfPath)) {
 				try {
-					storyCharBf.pixels = openfl.display.BitmapData.fromFile(bfPath);
+					storyCharBf.pixels = openfl.display.openfl.display.BitmapData.fromFile(bfPath);
 					storyCharBf.setGraphicSize(130);
 					storyCharBf.updateHitbox();
 				} catch(e:Dynamic) {}
@@ -1066,7 +1066,7 @@ class ModEditorState extends backend.MusicBeatState
 			var gfPath:String = 'mods/' + activeFolder + '/images/menucharacters/' + gfChar + '.png';
 			if (sys.FileSystem.exists(gfPath)) {
 				try {
-					storyCharGf.pixels = openfl.display.BitmapData.fromFile(gfPath);
+					storyCharGf.pixels = openfl.display.openfl.display.BitmapData.fromFile(gfPath);
 					storyCharGf.setGraphicSize(120);
 					storyCharGf.updateHitbox();
 				} catch(e:Dynamic) {}
@@ -1101,10 +1101,10 @@ class ModEditorState extends backend.MusicBeatState
 				var diffSprite = new FlxSprite(580, startDiffY);
 				var customPath = 'mods/' + activeFolder + '/images/menudifficulties/' + name + '.png';
 				if (sys.FileSystem.exists(customPath)) {
-					diffSprite.pixels = openfl.display.BitmapData.fromFile(customPath);
+					diffSprite.pixels = openfl.display.openfl.display.BitmapData.fromFile(customPath);
 				} else {
 					var globalPath = 'assets/images/menudifficulties/' + name + '.png';
-					if (sys.FileSystem.exists(globalPath)) diffSprite.pixels = openfl.display.BitmapData.fromFile(globalPath);
+					if (sys.FileSystem.exists(globalPath)) diffSprite.pixels = openfl.display.openfl.display.BitmapData.fromFile(globalPath);
 					else diffSprite.makeGraphic(120, 30, 0x00000000);
 				}
 				diffSprite.setGraphicSize(140);

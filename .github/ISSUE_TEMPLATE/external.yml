@@ -1,5 +1,5 @@
-name: Issue in a P-Slice fork
-description: If you experience an issue in your P-Slice that could be caused by the mainline code, you can try reporting it here 
+name: Issue in a Timeless Engine fork
+description: If you experience an issue in your Timeless Engine that could be caused by the mainline code, you can try reporting it here 
 labels: [external]
 body:
   - type: textarea
@@ -18,7 +18,7 @@ body:
   - type: dropdown
     id: psych
     attributes:
-      label: "Which \"Psych engine\" version of P-Slice this occurs in"
+      label: "Which \"Psych engine\" version of Timeless Engine this occurs in"
       options:
         - 0.6.3
         - 1.0.4

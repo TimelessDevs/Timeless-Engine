@@ -32,17 +32,17 @@ body:
       placeholder: "123" 
 
   - type: input
-    id: pslice-version
+    id: timeless-version
     attributes:
-      label: "In which version of P-Slice this occurs in (if it's the build from the Actions tab, then also include the commit hash of the build)"
-      placeholder: "3.2.1"
+      label: "In which version of Timeless Engine this occurs in (if it's the build from the Actions tab, then also include the commit hash of the build)"
+      placeholder: "0.0.4"
     validations:
       required: true
 
   - type: dropdown
     id: psych
     attributes:
-      label: "Which \"Psych engine\" version of P-Slice this occurs in"
+      label: "Which \"Psych engine\" version of Timeless Engine this occurs in"
       options:
         - 0.6.3
         - 1.0.4
