@@ -95,6 +95,7 @@ PyObject* timelesspython::universalCallbackBridge(PyObject* self, PyObject* args
     return timelesspython::TimePython_obj::convertHaxeToPy(result);
 }
 ")
+@:headerCode('extern "C" __declspec(dllimport) int __stdcall SetDllDirectoryW(const wchar_t* lpPathName);')
 class TimePython {
     private static var functionRegistry:Map<Int, Dynamic> = new Map();
 	private static var nextFunctionId:Int = 0;
@@ -119,17 +120,31 @@ class TimePython {
 	public var snakeCaseCache:Map<String, String> = new Map<String, String>();
 	public function new(scriptName:String) {
 		
-		
-		
 		this.scriptName = scriptName.trim();
 		this.scriptFile = scriptName;
 		if (!Py.isInitialized()) {
+			#if sys
+			var baseDir:String = haxe.io.Path.directory(Sys.programPath());
+			var timePythonPath:String = haxe.io.Path.join([baseDir, "timepython"]);
+
+			Sys.putEnv("PYTHONHOME", timePythonPath);
+			Sys.putEnv("PYTHONPATH", timePythonPath);
+			#end
+
 			Py.initialize();
 
 			#if windows
-			hxpy.PyRun.simpleString("import sys; sys.path.insert(0, './timepython/'); sys.path.append('./timepython/')");
+			hxpy.PyRun.simpleString("
+import sys
+sys.path.insert(0, './timepython/')
+sys.path.append('./timepython/')
+sys.path.append('./timepython/python313.zip')
+sys.path.append('./timepython/DLLs')
+sys.path.append('./timepython/Lib')
+");
 			#end
 		}
+
 		this.lastSlash = this.scriptFile.lastIndexOf("/");
 		if (this.lastSlash == -1) this.lastSlash = this.scriptFile.lastIndexOf("\\");
 		this.lastDot = scriptFile.lastIndexOf(".");

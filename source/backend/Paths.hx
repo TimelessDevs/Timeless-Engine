@@ -85,21 +85,94 @@ class Paths
 		return 'assets/videos/$key.$VIDEO_EXT';
 	}
 
-	inline static public function sound(key:String, ?modsAllowed:Bool = true):Sound
-		return returnSound('sounds/$key', modsAllowed);
-
-	inline static public function music(key:String, ?modsAllowed:Bool = true):Sound
-		return returnSound('music/$key', modsAllowed);
-
-	inline static public function inst(song:String, ?modsAllowed:Bool = true):Sound
-		return returnSound('${formatToSongPath(song)}/Inst', 'songs', modsAllowed);
-
-	inline static public function voices(song:String, postfix:String = null, ?modsAllowed:Bool = true):Sound
+	static public function sound(key:String, ?modsAllowed:Bool = true):Sound
 	{
-		var songKey:String = '${formatToSongPath(song)}/Voices';
-		if (postfix != null)
-			songKey += '-' + postfix;
-		return returnSound(songKey, 'songs', modsAllowed, false);
+		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
+		var baseKey:String = 'sounds/$key';
+
+		#if MODS_ALLOWED
+		if (modsAllowed) {
+			for (ext in audioExtensions) {
+				if (NativeFileSystem.exists(modFolders(baseKey + ext))) {
+					return returnSound(baseKey + ext.substring(0), modsAllowed);
+				}
+			}
+		}
+		#end
+
+		return returnSound(baseKey, modsAllowed);
+	}
+
+	static public function music(key:String, ?modsAllowed:Bool = true):Sound
+	{
+		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
+		var baseKey:String = 'music/$key';
+
+		#if MODS_ALLOWED
+		if (modsAllowed) {
+			for (ext in audioExtensions) {
+				if (NativeFileSystem.exists(modFolders(baseKey + ext))) {
+					return returnSound(baseKey + ext.substring(0), modsAllowed);
+				}
+			}
+		}
+		#end
+
+		return returnSound(baseKey, modsAllowed);
+	}
+
+	static public function inst(song:String, ?modsAllowed:Bool = true):Sound
+	{
+		var songPath:String = formatToSongPath(song);
+		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
+		
+		var instNames:Array<String> = ['Inst', 'inst', 'instrumental', 'Instrumental', 'instrumentals', 'Instrumentals'];
+		
+		#if MODS_ALLOWED
+		if (modsAllowed) {
+			for (name in instNames) {
+				for (ext in audioExtensions) {
+					var checkPath:String = modFolders('songs/$songPath/$name' + ext);
+					if (NativeFileSystem.exists(checkPath)) {
+						return returnSound('$songPath/$name' + ext.substring(0), 'songs', modsAllowed);
+					}
+				}
+			}
+		}
+		#end
+
+		return returnSound('$songPath/Inst', 'songs', modsAllowed);
+	}
+
+	static public function voices(song:String, postfix:String = null, ?modsAllowed:Bool = true):Sound
+	{
+		var songPath:String = formatToSongPath(song);
+		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
+		
+		var voicesNames:Array<String> = ['Voices', 'voices', 'vocal', 'vocals', 'Vocal', 'Vocals'];
+
+		#if MODS_ALLOWED
+		if (modsAllowed) {
+			for (name in voicesNames) {
+				var songKey:String = '$songPath/$name';
+				if (postfix != null) songKey += '-' + postfix;
+
+				for (ext in audioExtensions) {
+					var checkKey:String = 'songs/$songPath/$name';
+					if (postfix != null) checkKey += '-' + postfix;
+					
+					if (NativeFileSystem.exists(modFolders(checkKey + ext))) {
+						var loadedVoice:Sound = returnSound(songKey + ext.substring(0), 'songs', modsAllowed, true);
+						if (loadedVoice != null) return loadedVoice;
+					}
+				}
+			}
+		}
+		#end
+
+		var defaultKey:String = '$songPath/Voices';
+		if (postfix != null) defaultKey += '-' + postfix;
+		return returnSound(defaultKey, 'songs', modsAllowed, true);
 	}
 
 	inline static public function soundRandom(key:String, min:Int, max:Int, ?modsAllowed:Bool = true)
@@ -108,15 +181,30 @@ class Paths
 	static public function image(key:String, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxGraphic
 	{
 		var baseKey:String = Language.getFileTranslation('images/$key');
-		var extensions:Array<String> = ['.png', '.jpg', '.jpeg'];
-		var finalKey:String = baseKey + '.png'; // Дефолтный фоллбэк
+		var extensions:Array<String> = ['.png', '.jpg', '.jpeg', '.webp'];
+		var finalKey:String = baseKey + '.png';
+		var foundExt:String = '.png';
 
 		for (ext in extensions) {
 			var checkFile:String = baseKey + ext;
 			var fullPath:String = getPath(checkFile, IMAGE, parentFolder, true);
 			if (NativeFileSystem.exists(fullPath)) {
 				finalKey = checkFile;
+				foundExt = ext;
 				break;
+			}
+		}
+
+		if (foundExt != '.png') {
+			var fullPathToLoad:String = getPath(finalKey, IMAGE, parentFolder, true);
+			var rawBitmap = NativeFileSystem.getBitmap(fullPathToLoad);
+			
+			if (rawBitmap != null) {
+				rawBitmap.image.transparent = true;
+				rawBitmap.image.premultiplied = true;
+				
+				var virtualPngKey:String = baseKey + '.png';
+				return CacheSystem.cacheBitmap(virtualPngKey, rawBitmap, allowGPU);
 			}
 		}
 
@@ -143,6 +231,64 @@ class Paths
 
 	public static function fileExists(key:String, type:AssetType, ?ignoreMods:Bool = false, ?parentFolder:String = null)
 	{
+		if (type == IMAGE && key.toLowerCase().endsWith('.png'))
+		{
+			var extensions:Array<String> = ['.png', '.jpg', '.jpeg', '.webp'];
+			var baseKey:String = key.substring(0, key.length - 4);
+
+			#if MODS_ALLOWED
+			if (!ignoreMods)
+			{
+				var modKey:String = baseKey;
+				if (parentFolder == 'songs') modKey = 'songs/$baseKey';
+
+				for (ext in extensions)
+				{
+					for (mod in Mods.getGlobalMods())
+						if (NativeFileSystem.exists(mods('$mod/$modKey' + ext))) return true;
+
+					if (NativeFileSystem.exists(mods(Mods.currentModDirectory + '/' + modKey + ext)) || NativeFileSystem.exists(mods(modKey + ext)))
+						return true;
+				}
+			}
+			#end
+
+			for (ext in extensions)
+			{
+				if (NativeFileSystem.exists(getPath(baseKey + ext, type, parentFolder, false))) return true;
+			}
+			return false;
+		}
+
+		if (type == SOUND && key.toLowerCase().endsWith('.ogg'))
+		{
+			var extensions:Array<String> = ['.ogg', '.wav', '.mp3'];
+			var baseKey:String = key.substring(0, key.length - 4);
+
+			#if MODS_ALLOWED
+			if (!ignoreMods)
+			{
+				var modKey:String = baseKey;
+				if (parentFolder == 'songs') modKey = 'songs/$baseKey';
+
+				for (ext in extensions)
+				{
+					for (mod in Mods.getGlobalMods())
+						if (NativeFileSystem.exists(mods('$mod/$modKey' + ext))) return true;
+
+					if (NativeFileSystem.exists(mods(Mods.currentModDirectory + '/' + modKey + ext)) || NativeFileSystem.exists(mods(modKey + ext)))
+						return true;
+				}
+			}
+			#end
+
+			for (ext in extensions)
+			{
+				if (NativeFileSystem.exists(getPath(baseKey + ext, type, parentFolder, false))) return true;
+			}
+			return false;
+		}
+
 		#if MODS_ALLOWED
 		if (!ignoreMods)
 		{
@@ -170,7 +316,17 @@ class Paths
 
 		if (NativeFileSystem.exists(myXml))
 		{
-			return FlxAtlasFrames.fromSparrow(imageLoaded, NativeFileSystem.getContent(myXml));
+			var xmlContent:String = NativeFileSystem.getContent(myXml);
+			
+			if (imageLoaded != null && imageLoaded.assetsKey != null) {
+				var realExt:String = haxe.io.Path.extension(imageLoaded.assetsKey);
+				if (realExt != 'png' && realExt != '') {
+					var regex = ~/(imagePath="[^"]+)\.png"/g;
+					xmlContent = regex.replace(xmlContent, '$1.' + realExt + '"');
+				}
+			}
+			
+			return FlxAtlasFrames.fromSparrow(imageLoaded, xmlContent);
 		}
 		else
 		{
@@ -211,10 +367,27 @@ class Paths
 		if (NativeFileSystem.exists(xml))
 			xmlExists = true;
 
-		return FlxAtlasFrames.fromSparrow(imageLoaded,
-			(xmlExists ? NativeFileSystem.getContent(xml) : getPath(Language.getFileTranslation('images/$key') + '.xml', TEXT, parentFolder)));
+		var xmlContent:String = (xmlExists ? NativeFileSystem.getContent(xml) : getPath(Language.getFileTranslation('images/$key') + '.xml', TEXT, parentFolder));
+		
+		if (imageLoaded != null && imageLoaded.assetsKey != null) {
+			var realExt:String = haxe.io.Path.extension(imageLoaded.assetsKey);
+			if (realExt != 'png' && realExt != '') {
+				var regex = ~/(imagePath="[^"]+)\.png"/g;
+				xmlContent = regex.replace(xmlContent, '$1.' + realExt + '"');
+			}
+		}
+
+		return FlxAtlasFrames.fromSparrow(imageLoaded, xmlContent);
 		#else
-		return FlxAtlasFrames.fromSparrow(imageLoaded, getPath(Language.getFileTranslation('images/$key') + '.xml', TEXT, parentFolder));
+		var xmlContent:String = getPath(Language.getFileTranslation('images/$key') + '.xml', TEXT, parentFolder);
+		if (imageLoaded != null && imageLoaded.assetsKey != null) {
+			var realExt:String = haxe.io.Path.extension(imageLoaded.assetsKey);
+			if (realExt != 'png' && realExt != '') {
+				var regex = ~/(imagePath="[^"]+)\.png"/g;
+				xmlContent = regex.replace(xmlContent, '$1.' + realExt + '"');
+			}
+		}
+		return FlxAtlasFrames.fromSparrow(imageLoaded, xmlContent);
 		#end
 	}
 
@@ -261,14 +434,37 @@ class Paths
 	{
 		var baseFile:String = Language.getFileTranslation(key);
 		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
-		var finalFile:String = getPath(baseFile + '.$SOUND_EXT', SOUND, path, modsAllowed); // Фоллбэк
+		var finalFile:String = getPath(baseFile + '.$SOUND_EXT', SOUND, path, modsAllowed);
 
-		// Сканируем дисковую систему на предмет существования кастомных аудио-сэмплов
 		for (ext in audioExtensions) {
 			var checkFile:String = getPath(baseFile + ext, SOUND, path, modsAllowed);
 			if (NativeFileSystem.exists(checkFile)) {
 				finalFile = checkFile;
 				break;
+			}
+		}
+
+		if (finalFile.startsWith("mods/") || finalFile.contains(".TimelessEngine") || finalFile.endsWith('.wav') || finalFile.endsWith('.mp3'))
+		{
+			try {
+				if (NativeFileSystem.exists(finalFile)) {
+					if (finalFile.endsWith('.wav') || finalFile.endsWith('.mp3')) {
+						var loadedSound:flash.media.Sound = openfl.media.Sound.fromFile(finalFile);
+						if (loadedSound != null) return loadedSound;
+					}
+					
+					var fileBytes:haxe.io.Bytes = sys.io.File.getBytes(finalFile);
+					if (fileBytes != null && fileBytes.length > 0) {
+						var limeBytes = lime.utils.Bytes.fromBytes(fileBytes);
+						var audioBuffer = lime.media.AudioBuffer.fromBytes(limeBytes);
+						if (audioBuffer != null) {
+							var convertedSound:flash.media.Sound = openfl.media.Sound.fromAudioBuffer(audioBuffer);
+							if (convertedSound != null) return convertedSound;
+						}
+					}
+				}
+			} catch(e:Dynamic) {
+				trace("[AUDIO DECODER EXCEPTION]: Failed streaming for " + finalFile + " : " + e);
 			}
 		}
 
@@ -289,7 +485,7 @@ class Paths
 	{
 		var baseFile:String = path + '/' + key;
 		var audioExtensions:Array<String> = ['.ogg', '.wav', '.mp3'];
-		var finalFile:String = modFolders(baseFile + '.' + SOUND_EXT); // Фоллбэк
+		var finalFile:String = modFolders(baseFile + '.' + SOUND_EXT);
 
 		for (ext in audioExtensions) {
 			var checkFile:String = modFolders(baseFile + ext);
@@ -304,8 +500,8 @@ class Paths
 	inline static public function modsImages(key:String):String
 	{
 		var baseFile:String = 'images/' + key;
-		var imgExtensions:Array<String> = ['.png', '.jpg', '.jpeg'];
-		var finalFile:String = modFolders(baseFile + '.png'); // Дефолт
+		var imgExtensions:Array<String> = ['.png', '.jpg', '.jpeg', '.webp'];
+		var finalFile:String = modFolders(baseFile + '.png');
 
 		for (ext in imgExtensions) {
 			var checkFile:String = modFolders(baseFile + ext);
@@ -347,7 +543,6 @@ class Paths
 	private static function checkNamedModPath(key:String, modName:String):Null<String>
 	{
 		var basePath = key != "" ? '$modName/$currentLevel/' : '';
-		// Load from level folder in a mod
 		if (currentLevel != null && currentLevel != 'shared')
 		{
 			var levelPath = mods(basePath + key);

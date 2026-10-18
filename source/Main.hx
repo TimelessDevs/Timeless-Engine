@@ -30,6 +30,7 @@ import lime.graphics.Image;
 @:cppInclude('./external/gamemode_client.h')
 @:cppFileCode('#define GAMEMODE_AUTO')
 #end
+@:headerCode('extern "C" __declspec(dllimport) int __stdcall SetDllDirectoryW(const wchar_t* lpPathName);')
 class Main extends Sprite
 {
 	public static final game = {

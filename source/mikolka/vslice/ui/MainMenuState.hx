@@ -218,11 +218,11 @@ class MainMenuState extends MusicBeatState
 					}
 			}
 
-			if (FlxG.keys.justPressed.GRAVEACCENT)
-			{
-				FlxG.sound.play(Paths.sound('confirmMenu'));
-				backend.MusicBeatState.switchState(new states.modmenu.ModMenuState());
-			}
+			//if (FlxG.keys.justPressed.GRAVEACCENT)
+			//{
+			//	FlxG.sound.play(Paths.sound('confirmMenu'));
+			//	backend.MusicBeatState.switchState(new states.modmenu.ModMenuState());
+			//}
 
 			if (FlxG.sound.music.volume < 0.8)
 				FlxG.sound.music.volume += 0.5 * elapsed;

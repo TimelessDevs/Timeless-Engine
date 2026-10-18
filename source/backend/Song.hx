@@ -151,13 +151,13 @@ class Song
 		var vsliceChartPath:String = vsliceDataFolder + formattedFolder + '-chart.json';
 		var vsliceMetaPath:String = vsliceDataFolder + 'metadata.json';
 
-		if (sys.FileSystem.exists(vsliceChartPath) && sys.FileSystem.exists(vsliceMetaPath))
+		if (NativeFileSystem.exists(vsliceChartPath) && NativeFileSystem.exists(vsliceMetaPath))
 		{
-			trace("[TIMELESS HYBRID]: V-Slice chart blueprint detected for song: " + formattedFolder);
+			trace("[TIMELESS ENGINE]: V-Slice chart detected for song: " + formattedFolder);
 			try
 			{
-				var chartRaw:String = sys.io.File.getContent(vsliceChartPath);
-				var metaRaw:String = sys.io.File.getContent(vsliceMetaPath);
+				var chartRaw:String = NativeFileSystem.getContent(vsliceChartPath);
+				var metaRaw:String = NativeFileSystem.getContent(vsliceMetaPath);
 
 				var vChart = haxe.Json.parse(chartRaw);
 				var vMeta = haxe.Json.parse(metaRaw);

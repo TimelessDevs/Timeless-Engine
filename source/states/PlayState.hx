@@ -319,10 +319,18 @@ class PlayState extends MusicBeatState
 		
 		if (nextReloadAll)
 		{
-			CacheSystem.clearUnusedMemory();
+			CacheSystem.clearStoredMemory();
 			Language.reloadPhrases();
 		}
 		nextReloadAll = false;
+
+		if (ClientPrefs.data != null && ClientPrefs.data.framerate > 0)
+		{
+			if (flixel.FlxG.updateFramerate != ClientPrefs.data.framerate) 
+				flixel.FlxG.updateFramerate = ClientPrefs.data.framerate;
+		}
+
+		startCallback = startCountdown;
 
 		startCallback = startCountdown;
 		endCallback = endSong;
@@ -455,6 +463,38 @@ class PlayState extends MusicBeatState
 			add(boyfriendGroup);
 		}
 
+		try {
+			if (SONG.events != null) {
+				for (event in SONG.events) {
+					if (event != null) {
+						var subEvents:Array<Dynamic> = cast event;
+						for (subEvent in subEvents) {
+							if (subEvent != null) {
+								var innerEvents:Array<Dynamic> = cast subEvent;
+								for (e in innerEvents) {
+									if (e != null && (e == 'Change Character' || e == 'ChangeCharacter')) {
+										var targetChar:String = Std.string(innerEvents[1]);
+										var targetType:String = Std.string(innerEvents[2]).toLowerCase().trim();
+										
+										var charGroup:Int = 0; // 0 = bf, 1 = dad, 2 = gf
+										if (targetType == '0' || targetType == 'dad' || targetType == 'opponent') charGroup = 1;
+										if (targetType == '2' || targetType == 'gf' || targetType == 'girlfriend') charGroup = 2;
+
+										if (targetChar != null && targetChar.trim() != '') {
+											trace("[PRELOAD CORE]: Pre-caching assets into RAM for backup character -> " + targetChar);
+											addCharacterToList(targetChar, charGroup);
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		} catch(e:Dynamic) {
+			trace("[PRELOAD ERROR]: Failed to pre-cache swap characters: " + e); 
+		}
+
 		#if cpp
 		var directoriesToScan:Array<String> = ['mods/scripts/', 'assets/scripts/'];
 		if (backend.Mods.currentModDirectory != null && backend.Mods.currentModDirectory.trim().length > 0) {
@@ -465,14 +505,18 @@ class PlayState extends MusicBeatState
 		var hasPythonFiles:Bool = false;
 		for (folder in directoriesToScan)
 		{
-			if (sys.FileSystem.exists(folder) && sys.FileSystem.isDirectory(folder))
+			if (mikolka.funkin.custom.NativeFileSystem.exists(folder) && sys.FileSystem.isDirectory(folder))
 			{
-				for (file in sys.FileSystem.readDirectory(folder))
+				for (file in mikolka.funkin.custom.NativeFileSystem.readDirectory(folder))
 				{
 					if (file.toLowerCase().endsWith('.py'))
 					{
-						hasPythonFiles = true;
-						break;
+						var fullScriptPath:String = folder + file;
+						if (mikolka.funkin.custom.NativeFileSystem.exists(fullScriptPath) && sys.FileSystem.stat(fullScriptPath).size > 0)
+						{
+							hasPythonFiles = true;
+							break;
+						}
 					}
 				}
 			}
@@ -483,17 +527,20 @@ class PlayState extends MusicBeatState
 		{
 			for (folder in directoriesToScan)
 			{
-				if (sys.FileSystem.exists(folder) && sys.FileSystem.isDirectory(folder))
+				if (mikolka.funkin.custom.NativeFileSystem.exists(folder) && sys.FileSystem.isDirectory(folder))
 				{
-					for (file in sys.FileSystem.readDirectory(folder))
+					for (file in mikolka.funkin.custom.NativeFileSystem.readDirectory(folder))
 					{
 						if (file.toLowerCase().endsWith('.py'))
 						{
 							var fullScriptPath:String = folder + file;
-							trace("[PYTHON LOADER]: Initializing Timeless Python wrapper for -> " + fullScriptPath);
-							var pyScript = new timelesspython.TimePython(fullScriptPath);
-							if (pyScript.result == false) { 
-								trace("[PYTHON SUCCESS]: Script fully bound via hxpy: " + file);
+							if (mikolka.funkin.custom.NativeFileSystem.exists(fullScriptPath) && sys.FileSystem.stat(fullScriptPath).size > 0)
+							{
+								trace("[PYTHON LOADER]: Initializing Timeless Python wrapper for -> " + fullScriptPath);
+								var pyScript = new timelesspython.TimePython(fullScriptPath);
+								if (pyScript.result == false) { 
+									trace("[PYTHON SUCCESS]: Script fully bound via hxpy: " + file);
+								}
 							}
 						}
 					}
@@ -505,14 +552,18 @@ class PlayState extends MusicBeatState
 
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'scripts/'))
-			for (file in NativeFileSystem.readDirectory(folder))
+			for (file in mikolka.funkin.custom.NativeFileSystem.readDirectory(folder))
 		{
-			#if LUA_ALLOWED
-			if (file.toLowerCase().endsWith('.lua')) new FunkinLua(folder + file);
-			#end
-			#if HSCRIPT_ALLOWED
-			if (file.toLowerCase().endsWith('.hx') || file.toLowerCase().endsWith('.hxc')) initHScript(folder + file);
-			#end
+			var fullScriptPath:String = folder + file;
+			if (mikolka.funkin.custom.NativeFileSystem.exists(fullScriptPath) && sys.FileSystem.stat(fullScriptPath).size > 0)
+			{
+				#if LUA_ALLOWED
+				if (file.toLowerCase().endsWith('.lua')) new FunkinLua(fullScriptPath);
+				#end
+				#if HSCRIPT_ALLOWED
+				if (file.toLowerCase().endsWith('.hx') || file.toLowerCase().endsWith('.hxc')) initHScript(fullScriptPath);
+				#end
+			}
 		}
 		#end
 
@@ -666,35 +717,33 @@ class PlayState extends MusicBeatState
 
 		#if (LUA_ALLOWED || HSCRIPT_ALLOWED)
 		for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
-			for (file in NativeFileSystem.readDirectory(folder))
+			for (file in mikolka.funkin.custom.NativeFileSystem.readDirectory(folder))
 		{
-			#if LUA_ALLOWED
-			if (file.toLowerCase().endsWith('.lua')) new FunkinLua(folder + file);
-			#end
-
-			#if windows
-			#if cpp
-			for (folder in Mods.directoriesWithFile(Paths.getSharedPath(), 'data/$songName/'))
+			var fullScriptPath:String = folder + file;
+			if (mikolka.funkin.custom.NativeFileSystem.exists(fullScriptPath) && sys.FileSystem.stat(fullScriptPath).size > 0)
 			{
-				for (file in sys.FileSystem.readDirectory(folder))
+				#if LUA_ALLOWED
+				if (file.toLowerCase().endsWith('.lua')) new FunkinLua(fullScriptPath);
+				#end
+
+				#if windows
+				#if cpp
+				if (file.toLowerCase().endsWith('.cs'))
 				{
-					if (file.toLowerCase().endsWith('.cs'))
+					var csScript = new backend.CSharpManager.TimelessCSharpScript(fullScriptPath);
+					if (csScript.isLoaded)
 					{
-						var csScript = new backend.CSharpManager.TimelessCSharpScript(folder + file);
-						if (csScript.isLoaded)
-						{
-							csharpScripts.push(csScript);
-							csScript.callFunction("onCreate", [songName]);
-						}
+						csharpScripts.push(csScript);
+						csScript.callFunction("onCreate", [songName]);
 					}
 				}
-			}
-			#end
-			#end
+				#end
+				#end
 
-			#if HSCRIPT_ALLOWED
-			if (file.toLowerCase().endsWith('.hx')) initHScript(folder + file);
-			#end
+				#if HSCRIPT_ALLOWED
+				if (file.toLowerCase().endsWith('.hx')) initHScript(fullScriptPath);
+				#end
+			}
 		}
 		#end
 	
@@ -1076,7 +1125,7 @@ class PlayState extends MusicBeatState
 		var luaFile:String = 'characters/$name.lua';
 		#if MODS_ALLOWED
 		var replacePath:String = Paths.modFolders(luaFile);
-		if (NativeFileSystem.exists(replacePath))
+		if (mikolka.funkin.custom.NativeFileSystem.exists(replacePath))
 		{
 			luaFile = replacePath;
 			doPush = true;
@@ -1084,7 +1133,7 @@ class PlayState extends MusicBeatState
 		else
 		{
 			luaFile = Paths.getSharedPath(luaFile);
-			if (NativeFileSystem.exists(luaFile))
+			if (mikolka.funkin.custom.NativeFileSystem.exists(luaFile))
 				doPush = true;
 		}
 		#else
@@ -1113,7 +1162,7 @@ class PlayState extends MusicBeatState
 		var scriptFile:String = 'characters/' + name + '.hx';
 		#if MODS_ALLOWED
 		var replacePathHScript:String = Paths.modFolders(scriptFile);
-		if (NativeFileSystem.exists(replacePathHScript))
+		if (mikolka.funkin.custom.NativeFileSystem.exists(replacePathHScript))
 		{
 			scriptFile = replacePathHScript;
 			doPushHScript = true;
@@ -1122,13 +1171,13 @@ class PlayState extends MusicBeatState
 		#end
 		{
 			scriptFile = Paths.getSharedPath(scriptFile);
-			if (NativeFileSystem.exists(scriptFile))
+			if (mikolka.funkin.custom.NativeFileSystem.exists(scriptFile))
 				doPushHScript = true;
 		}
 
 		if (doPushHScript)
 		{
-			if (!Iris.instances.exists(scriptFile))
+			if (!crowplexus.iris.Iris.instances.exists(scriptFile))
 				initHScript(scriptFile);
 		}
 		#end
@@ -1894,10 +1943,12 @@ class PlayState extends MusicBeatState
 								var targetType:String = Std.string(subEvent[2]);
 		
 								var charGroup:Int = 1; 
-								if (targetType == '0' || targetType == 'dad') charGroup = 0;
-								if (targetType == '2' || targetType == 'gf') charGroup = 2;
+								if (targetType == '0' || targetType == 'dad' || targetType == 'opponent') charGroup = 1;
+								if (targetType == '1' || targetType == 'bf' || targetType == 'boyfriend') charGroup = 0;
+								if (targetType == '2' || targetType == 'gf' || targetType == 'girlfriend') charGroup = 2;
 		
 								if (targetChar != null && targetChar.trim() != '') {
+									trace("[PRELOAD CORE]: Pre-caching assets into RAM for backup character: " + targetChar);
 									addCharacterToList(targetChar, charGroup);
 								}
 							}
@@ -1906,7 +1957,7 @@ class PlayState extends MusicBeatState
 				}
 			}
 		} catch(e:Dynamic) {
-			trace("Android Preload Skip: " + e); 
+			trace("[PRELOAD ERROR]: Failed to pre-cache change character event: " + e); 
 		}
 
 		vocals = new FlxSound();

@@ -4,7 +4,6 @@ import openfl.display.BitmapData;
 import backend.Mods;
 import flixel.graphics.FlxGraphic;
 import flixel.util.FlxSpriteUtil;
-import flixel.text.FlxInputText;
 import options.ModSettingsSubState;
 import mikolka.vslice.ui.title.TitleState;
 import mikolka.funkin.custom.mobile.MobileScaleMode;
@@ -29,8 +28,6 @@ class ModsMenuState extends MusicBeatState
 	var bgTitle:FlxSprite;
 	var bgDescription:FlxSprite;
 	var bgButtons:FlxSprite;
-
-	private var modFormatIndicatorText:flixel.text.FlxText;
 
 	public static var modsGroup:FlxTypedGroup<ModItem>;
 	public static var curSelectedMod:Int = 0;
@@ -174,14 +171,14 @@ class ModsMenuState extends MusicBeatState
 			buttonEnableAll.visible = true;
 
 			var myX = bgList.x + bgList.width + 20;
-			noModsTxt = new FlxText(myX, 0, FlxG.width - myX - 20, Language.getPhrase('no_mods_installed', "No mods are installed", [daButton]), 48);
+			noModsTxt = new FlxText(myX, 0, FlxG.width - myX - 20, Language.getPhrase('no_mods_installed', "NO MODS INSTALLED\nPRESS {1} TO EXIT OR INSTALL A MOD", [daButton]), 48);
 			if(FlxG.random.bool(0.1)) noModsTxt.text += '\nBITCH.'; //meanie
 			noModsTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 			noModsTxt.borderSize = 2;
 			add(noModsTxt);
 			noModsTxt.screenCenter(Y);
 
-			var txt = new FlxText(bgList.x + 15, bgList.y + 15, bgList.width - 30, Language.getPhrase('no_mods_found', "No mods"), 16);
+			var txt = new FlxText(bgList.x + 15, bgList.y + 15, bgList.width - 30, Language.getPhrase('no_mods_found', "No Mods found."), 16);
 			txt.setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE);
 			add(txt);
 

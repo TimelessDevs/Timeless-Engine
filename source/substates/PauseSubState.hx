@@ -25,6 +25,7 @@ class PauseSubState extends MusicBeatSubstate
 		#if TOUCH_CONTROLS_ALLOWED 'Chart Editor', #end
 		'Change Difficulty',
 		'Options',
+		'Close the game',
 		'Exit to menu'
 	];
 	var difficultyChoices = [];
@@ -89,10 +90,6 @@ class PauseSubState extends MusicBeatSubstate
 		}
 		else if (PlayState.instance.practiceMode && !PlayState.instance.startingSong)
 			menuItemsOG.insert(3, 'Skip Time');
-
-		if (!menuItemsOG.contains('Controls')) {
-			menuItemsOG.insert(menuItemsOG.length - 1, 'Controls');
-		}
 
 		#if mobile
 		if (!menuItemsOG.contains('Console')) {
@@ -401,48 +398,6 @@ class PauseSubState extends MusicBeatSubstate
 					restartSong();
 				case 'Chart Editor':
 					PlayState.instance.openChartEditor();
-
-				case 'Controls':
-					try {
-						if (grpMenuShit != null) grpMenuShit.visible = false;
-						
-						for (field in ["levelTxt", "levelInfo", "levelDifficulty", "blueballedTxt"]) {
-							if (Reflect.hasField(this, field)) {
-								var obj:Dynamic = Reflect.field(this, field);
-								if (obj != null) obj.visible = false;
-							}
-						}
-						
-						#if mobile
-						var sub = new mobile.options.MobileOptionsSubState();
-						#else
-						var sub = new options.ControlsSubState();
-						#end
-						
-						sub.closeCallback = function() {
-							if (grpMenuShit != null) grpMenuShit.visible = true;
-							for (field in ["levelTxt", "levelInfo", "levelDifficulty", "blueballedTxt"]) {
-								if (Reflect.hasField(this, field)) {
-									var obj:Dynamic = Reflect.field(this, field);
-									if (obj != null) obj.visible = true;
-								}
-							}
-						};
-						
-						openSubState(sub);
-					} catch(e:Dynamic) {
-						states.PlayState.instance.catchScriptError("Controls visibility override failed: " + Std.string(e));
-					}
-				case 'Console':
-				#if mobile
-				close();
-				@:privateAccess {
-					if (states.PlayState.instance != null && states.PlayState.instance.timelessConsole != null) {
-						states.PlayState.instance.timelessConsole.toggleConsoleOverlayVisibility();
-					}
-				}
-				#end
-
 				case "Leave Charting Mode":
 					restartSong();
 					PlayState.chartingMode = false;
@@ -484,6 +439,9 @@ class PauseSubState extends MusicBeatSubstate
 					} catch(e:Dynamic) {
 						backend.MusicBeatState.switchState(cast Type.createInstance(Type.resolveClass("options.OptionsState"), []));
 					}
+
+				case 'Close the game':
+					Sys.exit(0);
 
 				case "Exit to menu":
 					#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end

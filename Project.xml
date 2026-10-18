@@ -19,9 +19,13 @@
 	<set name="APP_ID" value="0x0100f6c013bbc000" />
 	<meta build-number="101" />
 	<config type="android" gradle-version="8.10.2" gradle-plugin="8.8.0" ndkVersion="27.3"
-	minimum-sdk-version="26" target-sdk-version="35"  />
+	 minimum-sdk-version="26" target-sdk-version="35" requestLegacyExternalStorage="true" />
 	
 	<!-- NOTE TO SELF: DISABLE THIS IF ISSUES ARE FOUND -->
+
+	<android permission="android.permission.READ_EXTERNAL_STORAGE" />
+	<android permission="android.permission.WRITE_EXTERNAL_STORAGE" />
+	<android permission="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
 <!-- NOTE TO SELF: DISABLE THIS IF ISSUES ARE FOUND -->
 	<haxedef name="LINC_LUA_RELATIVE_DYNAMIC_LIB" /> <!-- stable luas PUT AFTER FIRST LINE WITH APP
@@ -168,9 +172,6 @@
 		<assets path="alsoft.txt" rename="plugins/alsoft.conf" type="text" unless="windows" />
 	</section>
 
-	<!-- Timeless Engine: python folder -->
-	<assets path="python" rename="python" type="template" if="windows" />
-
 	<!-- Assets -->
 	<assets path="assets/scripts" />
 
@@ -234,9 +235,6 @@
 		<assets path='example_mods' rename='mods' embed='false' />
 	</section>
 
-	<section if="MODS_ALLOWED">
-		<assets path='python' rename='timepython' embed='false' />
-	</section>
 	<assets path='art/readme.txt' rename='do NOT readme.txt' unless="mobile" />
 
 	<!-- _______________________________ Haxe libs ______________________________ -->
@@ -277,6 +275,9 @@
 	
 	<section if="windows">
 		<config:windows compiler="msvc" />
+
+		<linkerflag value="-DELAYLOAD:python313.dll" />
+		<linkerflag value="delayimp.lib" />
 	</section>
 
 	<target id="windows" if="cpp">
@@ -288,16 +289,7 @@
 		<compilerflag value="-I/hxpy/include" />
 	</target>
 
-	<template path="python" rename="python" if="windows" />
-	<template path="python/python3.dll" rename="python3.dll" if="windows" />
-	<template path="python/python313.dll" rename="python313.dll" if="windows" />
-
-	<template path="python" rename="timepython" if="windows" />
-
-	<!-- This one rejects python if its mobile build so i dont need to suffer -->
-	<target id="android">
-		<define name="HXPY_ANDROID" />
-	</target>
+	<assets path="python" rename="timepython" if="windows" embed="false" />
 
 	<!-- Category Type for Apple Systems -->
 	<config:ios category_type="public.app-category.music-games" />
@@ -408,6 +400,8 @@
 	fixes-->
 	<haxeflag name="--macro" value="allowPackage('flash')" />
 	<haxeflag name="--macro" value="include('my.pack')" />
+
+	<macro name="backend.AutoFixer.run()" />
 
 	<source path="C:/HaxeToolkit/haxe/lib/flixel-addons/4,0,2" />
 	<define name="flixel-addons" value="4.0.2" />
