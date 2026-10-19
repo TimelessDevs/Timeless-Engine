@@ -83,9 +83,17 @@ class GameplayChangersSubstate extends MusicBeatSubstate
 		optionsArray.push(new GameplayOption('Botplay', 'botplay', BOOL, false));
 		optionsArray.push(new GameplayOption('Crash on Miss', 'crashOnMiss', BOOL, false));
 		optionsArray.push(new GameplayOption('Reverse Health', 'reverseHealth', BOOL, false));
-		optionsArray.push(new GameplayOption('Health Drain', 'healthDrain', BOOL, false));
 
+		var drainOption:GameplayOption = new GameplayOption('Health Drain', 'healthDrain', FLOAT, 0.0);
+		drainOption.scrollSpeed = 5.0;
+		drainOption.minValue = 0.0;
+		drainOption.maxValue = 10.0;
+		drainOption.changeValue = 0.1;
+		drainOption.decimals = 1;
+		drainOption.displayFormat = '%vX';
+		optionsArray.push(drainOption);
 
+		optionsArray.push(new GameplayOption('Deadly Health Drain', 'deadlyHealthDrain', BOOL, false));
 	}
 
 	public function getOptionByName(name:String)

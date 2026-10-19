@@ -40,6 +40,8 @@ class NoteSplash extends FlxSprite
 	public var inEditor:Bool = false;
 
 	var spawned:Bool = false;
+	var aliveTime:Float = 0;
+	static var buggedKillTime:Float = 0.5;
 	var noteDataMap:Map<Int, String> = new Map();
 
 	public static var defaultNoteSplash(default, never):String = "noteSplashes/noteSplashes";
@@ -290,8 +292,10 @@ class NoteSplash extends FlxSprite
 		}
 
 		animation.finishCallback = function(name:String) {
-			kill();
+			visible = false;
+			active = false;
 			spawned = false;
+			kill();
 		}
 
 		alpha = ClientPrefs.data.splashAlpha;
@@ -336,17 +340,17 @@ class NoteSplash extends FlxSprite
 		return animFrames.length > 0;
 	}
 
-	var aliveTime:Float = 0;
-	static var buggedKillTime:Float = 0.5; //automatically kills note splashes if they break to prevent it from flooding your HUD
 	override function update(elapsed:Float)
 	{
 		if (spawned)
 		{
 			aliveTime += elapsed;
-			if (animation.curAnim == null && aliveTime >= buggedKillTime)
+			if ((animation.curAnim == null || aliveTime >= buggedKillTime))
 			{
-				kill();
+				visible = false;
+				active = false;
 				spawned = false;
+				kill();
 			}
 		}
 

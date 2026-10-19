@@ -236,16 +236,14 @@ class Character extends FlxSprite
 
 		if (PlayState.instance != null && PlayState.instance.camGame != null && !debugMode)
 		{
-				// Проверяем, попадает ли хитбокс персонажа в границы экрана камеры camGame
-				if (!isOnScreen())
+			if (!isOnScreen())
+			{
+				if (getAnimationName() == null || !getAnimationName().startsWith('sing'))
 				{
-						// Если персонаж поет (sing), мы НЕ замораживаем его, чтобы не сломать тайминги удержания нот!
-						if (getAnimationName() == null || !getAnimationName().startsWith('sing'))
-						{
-								super.update(elapsed); // Выполняем базовое обновление позиции, но анимацию пропускаем
-								return;
-						}
+					super.update(elapsed);
+					return;
 				}
+			}
 		}
 
 		if(heyTimer > 0)

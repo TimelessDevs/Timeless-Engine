@@ -33,6 +33,12 @@ class GameplaySettingsSubState extends BaseOptionsMenu
 			'ghostTapping',
 			BOOL);
 		addOption(option);
+
+		var cbfOption:Option = new Option('Click Between Frames',
+			'If checked, allows the game to read your inputs between frames.\nCompletely eliminates input lag on low framerates!',
+			'clickBetweenFrames',
+			BOOL);
+		addOption(cbfOption);
 		
 		var option:Option = new Option('Auto Pause',
 			"If checked, the game automatically pauses if the screen isn't on focus.",

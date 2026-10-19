@@ -17,29 +17,16 @@ typedef ImageLine =
 };
 
 @:access(openfl.display.BitmapData)
+@:access(flixel.system.frontEnds.BitmapFrontEnd._cache)
 class CacheSystem
 {
-	/**
-	 * A list of all cached graphics
-	 */
-	public static var currentTrackedAssets:Map<String, FlxGraphic> = [];
-
-	/**
-	 * A list of cached sounds
-	 */
-	public static var currentTrackedSounds:Map<String, Sound> = [];
-
-	/**
-	 * define the locally tracked assets
-	 * Those assets are used in the current context.
-	**/
-	public static var localTrackedAssets:Array<String> = [];
-
-	/**
-	 * A global list of assets to exclude from memory purges.
-	 * Effectively, they stay loaded forever.
-	 */
+	public static var currentTrackedAssets:Map<String, FlxGraphic> = new Map<String, FlxGraphic>();
+	public static var currentTrackedSounds:Map<String, Sound> = new Map<String, Sound>();
+	
+	public static var localTrackedAssets:Map<String, Bool> = new Map<String, Bool>();
 	public static var dumpExclusions:Array<String> = ['music/freakyMenu.${Paths.SOUND_EXT}'];
+
+	private static var _pathCache:Map<String, String> = new Map<String, String>();
 
 	public static function excludeAsset(key:String)
 	{
@@ -47,61 +34,82 @@ class CacheSystem
 			dumpExclusions.push(key);
 	}
 
-	/**
-	 * Removes every graphic and sound not contained in the local context.
-	 * This means, that if you've requested any cached assets in this context,
-	 * they won't be purged.
-	 */
 	public static function clearUnusedMemory()
 	{
-				// clear non local assets in the tracked assets list
+		var purgedGraphics:Int = 0;
+
 		for (key in currentTrackedAssets.keys())
 		{
-			// if it is not currently contained within the used local assets
-			if (!localTrackedAssets.contains(key) && !dumpExclusions.contains(key))
+			if (!localTrackedAssets.exists(key) && !dumpExclusions.contains(key))
 			{
-				destroyGraphic(currentTrackedAssets.get(key)); // get rid of the graphic
-				currentTrackedAssets.remove(key); // and remove the key from local cache map
+				var graphic:FlxGraphic = currentTrackedAssets.get(key);
+				if (graphic != null)
+				{
+					if (graphic.bitmap != null) {
+						graphic.bitmap.dispose();
+						#if !flash
+						graphic.bitmap.disposeImage();
+						#end
+					}
+					
+					flixel.FlxG.bitmap.remove(graphic);
+					graphic.destroy();
+					purgedGraphics++;
+				}
+				currentTrackedAssets.remove(key);
 			}
 		}
-		// clear all sounds that are cached
-		for (key => asset in currentTrackedSounds)
+
+		for (key in currentTrackedSounds.keys())
 		{
-			if (!localTrackedAssets.contains(key) && !dumpExclusions.contains(key) && asset != null)
+			if (!localTrackedAssets.exists(key) && !dumpExclusions.contains(key))
 			{
-				Assets.cache.clear(key);
-				var snd = currentTrackedSounds.get(key);
+				var snd:Sound = currentTrackedSounds.get(key);
+				if (snd != null)
+				{
+					try {
+						snd.close(); 
+					} catch(e:Dynamic) {}
+				}
 				currentTrackedSounds.remove(key);
-				// @:privateAccess(){
-				// 	snd.__buffer.data.buffer.b.clear();
-				// 	snd.__buffer.data.buffer = null;
-				// 	snd.__buffer = null;
-				// }
 			}
 		}
+
+		try {
+			openfl.utils.Assets.cache.clear("images");
+			openfl.utils.Assets.cache.clear("songs");
+			openfl.utils.Assets.cache.clear("music");
+			
+			flixel.FlxG.bitmap.reset();
+		} catch(e:Dynamic) {}
+
 		#if cpp
+		cpp.vm.Gc.enable(true);
 		cpp.vm.Gc.compact();
+		cpp.vm.Gc.run(true);
 		#end
+
+		if (purgedGraphics > 0) {
+			trace("[TIMELESS CORE PURGE]: Wiped " + purgedGraphics + " assets. VRAM/RAM synced.");
+		}
 	}
 
 	#if debug
 	public static function cacheStatus():String
 	{
 		var str = new StringBuf();
-		str.add('-- Cache dump start --');
-		str.add("\n");
-		str.add('( openfl caches are ${openfl.utils.Assets.cache.enabled})');
-		str.add("\n");
+		str.add('-- Cache dump start --\n');
+		str.add('( openfl caches are ${openfl.utils.Assets.cache.enabled})\n');
 		var totalMemory = 0;
 
-		str.add("-- Managed bitmaps --");
-		str.add("\n");
+		str.add("-- Managed bitmaps --\n");
 		var entries:Array<ImageLine> = [];
-		@:privateAccess
-		for (key => texture in FlxG.bitmap._cache)
+		
+		for (key in FlxG.bitmap._cache.keys())
 		{
+			var texture = FlxG.bitmap._cache.get(key);
 			var inStored = currentTrackedAssets.exists(key) ? "S" : "-";
-			var inLocal = localTrackedAssets.contains(key) ? "L" : "-";
+			var inLocal = localTrackedAssets.exists(key) ? "L" : "-";
 			var memory = texture?.bitmap?.image?.data?.byteLength ?? 0;
 			entries.push({
 				size: memory,
@@ -112,76 +120,57 @@ class CacheSystem
 		entries.sort((x, y) -> cast y.size - x.size);
 		for (entry in entries)
 		{
-			str.add(entry.text);
-			str.add("\n");
+			str.add(entry.text + "\n");
 		}
-		str.add('Total: ${FlxStringUtil.formatBytes(totalMemory)}');
-		str.add("\n");
+		str.add('Total: ${FlxStringUtil.formatBytes(totalMemory)}\n');
 
-		str.add("-- Managed sounds --");
-		str.add("\n");
+		str.add("-- Managed sounds --\n");
 		totalMemory = 0;
-		@:privateAccess
-		for (key => snd in currentTrackedSounds)
+		for (key in currentTrackedSounds.keys())
 		{
-			var inLocal = localTrackedAssets.contains(key) ? "L" : "-";
+			var snd = currentTrackedSounds.get(key);
+			var inLocal = localTrackedAssets.exists(key) ? "L" : "-";
 			var memory = snd.bytesLoaded;
-			str.add('[ $inLocal ](${FlxStringUtil.formatBytes(memory)}}/${FlxStringUtil.formatBytes(snd.bytesTotal)}) $key');
-			str.add("\n");
+			str.add('[ $inLocal ](${FlxStringUtil.formatBytes(memory)}}/${FlxStringUtil.formatBytes(snd.bytesTotal)}) $key\n');
 			totalMemory += memory;
 		}
-		str.add('Total: ${FlxStringUtil.formatBytes(totalMemory)}');
-		str.add("\n");
+		str.add('Total: ${FlxStringUtil.formatBytes(totalMemory)}\n');
 
-		str.add("-- OPENFL sounds --");
-		str.add("\n");
+		str.add("-- OPENFL sounds --\n");
 		totalMemory = 0;
-		@:privateAccess
-		for (key => snd in currentTrackedSounds)
+		for (key in currentTrackedSounds.keys())
 		{
-			var memory = snd.__buffer.data.length;
-			str.add(' (${FlxStringUtil.formatBytes(memory)}) $key');
-			str.add("\n");
+			var snd = currentTrackedSounds.get(key);
+			var memory = (snd != null && snd.__buffer != null && snd.__buffer.data != null) ? snd.__buffer.data.length : 0;
+			str.add(' (${FlxStringUtil.formatBytes(memory)}) $key\n');
 			totalMemory += memory;
 		}
-		str.add('Total: ${FlxStringUtil.formatBytes(totalMemory)}');
-		str.add("\n");
-
-		str.add("-- END --");
+		str.add('Total: ${FlxStringUtil.formatBytes(totalMemory)}\n-- END --');
 		return str.toString();
 	}
 	#end
 
-	/**
-	 * Clears up internal remnants of graphics not cached by this system.
-	 * It also clears the current context.
-	 * 
-	 * This means that the next ``clearUnusedMemory`` call will purge them
-	 * (unless you load them from cache before that)
-	 */
-	@:access(flixel.system.frontEnds.BitmapFrontEnd._cache)
 	public static function clearStoredMemory()
 	{
-		// clear anything not in the tracked assets list
 		for (key in FlxG.bitmap._cache.keys())
 		{
-			if (!currentTrackedAssets.exists(key) && !dumpExclusions.contains(key)){
-
+			if (!currentTrackedAssets.exists(key) && !dumpExclusions.contains(key))
+			{
 				destroyGraphic(FlxG.bitmap.get(key));
-				
 			}
 		}
 
-		// flags everything to be cleared out next unused memory clear
-		localTrackedAssets = [];
-		#if !html5 openfl.Assets.cache.clear("songs"); #end
+		localTrackedAssets = new Map<String, Bool>();
+		#if !html5 
+		openfl.Assets.cache.clear("songs"); 
+		#end
 	}
 
 	public static function loadBitmap(key:String, ?parentFolder:String = null, ?allowGPU:Bool = true):FlxGraphic
 	{
 		if (currentTrackedAssets.exists(key))
 		{
-			localTrackedAssets.push(key);
+			localTrackedAssets.set(key, true);
 			return currentTrackedAssets.get(key);
 		}
 		var bitmap = __loadBitmap(key, parentFolder);
@@ -190,11 +179,11 @@ class CacheSystem
 
 	public static function cacheBitmap(key:String, bitmap:BitmapData, ?allowGPU:Bool = true):FlxGraphic
 	{
-		if (bitmap == null)
-			return null;
-		if (allowGPU && ClientPrefs.data.cacheOnGPU && bitmap?.image != null)
+		if (bitmap == null) return null;
+
+		if (allowGPU && ClientPrefs.data.cacheOnGPU && bitmap.image != null)
 		{
-			bitmap.lock(); // This does nothing on cpp
+			bitmap.lock();
 			if (bitmap.__texture == null)
 			{
 				bitmap.image.premultiplied = true;
@@ -204,216 +193,238 @@ class CacheSystem
 			if (!Std.isOfType(bitmap.__texture, openfl.display3D.textures.ASTCTexture))
 			{
 			#end
-
 				bitmap.getSurface();
 				bitmap.disposeImage();
 				bitmap.image.data = null;
 				bitmap.image = null;
 				bitmap.readable = true;
-
 			#if ATSC_SUPPORT
 			}
 			#end
 		}
 
-		var graph:FlxGraphic = FlxGraphic.fromBitmapData(bitmap, false, key);
+		var graph:FlxGraphic = FlxGraphic.fromBitmapData(bitmap, false, key, false);
 		graph.persist = true;
 		graph.destroyOnNoUse = false;
 
 		currentTrackedAssets.set(key, graph);
-		localTrackedAssets.push(key);
+		localTrackedAssets.set(key, true);
 		return graph;
 	}
 
-	/**
-		 * Loads and caches a sound from the given path.
-		 * @param file 
-		 * @param requestName 
-		 * @return Sound
-		 */
 	public static function loadSound(file:String, ?beepOnNull:Bool = true, requestName:String = ""):Sound
 	{
-		// trace('precaching sound: $file');
-		if (!currentTrackedSounds.exists(file))
+		if (file == null || file.length == 0) return flixel.system.FlxAssets.getSound('flixel/sounds/beep');
+
+		if (currentTrackedSounds.exists(file))
 		{
-			var isTrackingSound = false;
-			var sound = NativeFileSystem.getSound(file);
-			if (sound != null)
-			{
-				currentTrackedSounds.set(file, sound);
-				isTrackingSound = true;
-			}
-			else if (beepOnNull && !isTrackingSound)
-			{
-				trace('SOUND NOT FOUND: $requestName');
-				return FlxAssets.getSound('flixel/sounds/beep');
+			localTrackedAssets.set(file, true);
+			return currentTrackedSounds.get(file);
+		}
+
+		if (mikolka.funkin.custom.NativeFileSystem.exists(file))
+		{
+			try {
+				if (file.contains("songs") || file.contains("music") || file.contains("stayFunky") || file.contains("freakyMenu")) {
+					var streamSound:Sound = openfl.media.Sound.fromFile(file);
+					if (streamSound != null)
+					{
+						currentTrackedSounds.set(file, streamSound);
+						localTrackedAssets.set(file, true);
+						return streamSound;
+					}
+				}
+				
+				var normalSound:Sound = openfl.Assets.getSound(file);
+				if (normalSound != null) {
+					currentTrackedSounds.set(file, normalSound);
+					localTrackedAssets.set(file, true);
+					return normalSound;
+				}
+			} catch(e:Dynamic) {
+				trace("[TIMELESS AUDIO CORE WARN]: Failed to parse asset -> " + file + " | " + e);
 			}
 		}
-		localTrackedAssets.push(file);
-		return currentTrackedSounds.get(file);
+
+		if (beepOnNull)
+		{
+			var fallbackBeep = flixel.system.FlxAssets.getSound('flixel/sounds/beep');
+			if (fallbackBeep != null) return fallbackBeep;
+		}
+		return null;
 	}
 
-	/**
-		 * I believe this ose is used to clear graphics cache while preserving graphics used by
-		 * the current state.
-		 */
 	public static function freeGraphicsFromMemory()
 	{
-		var protectedGfx:Array<FlxGraphic> = [];
+		var protectedGfx:Map<FlxGraphic, Bool> = new Map<FlxGraphic, Bool>();
+		
 		function checkForGraphics(spr:Dynamic)
 		{
+			if (spr == null) return;
 			try
 			{
 				var grp:Array<Dynamic> = Reflect.getProperty(spr, 'members');
 				if (grp != null)
 				{
-					// trace('is actually a group');
-					for (member in grp)
+					for (i in 0...grp.length)
 					{
-						checkForGraphics(member);
+						checkForGraphics(grp[i]);
 					}
 					return;
 				}
-			}
+			} catch(e:Dynamic) {}
 
 			try
 			{
 				var gfx:FlxGraphic = Reflect.getProperty(spr, 'graphic');
 				if (gfx != null)
 				{
-					protectedGfx.push(gfx);
-					// trace('gfx added to the list successfully!');
+					protectedGfx.set(gfx, true);
 				}
-			}
-			// catch(haxe.Exception) {}
+			} catch(e:Dynamic) {}
 		}
 
-		for (member in FlxG.state.members)
-			checkForGraphics(member);
+		var currentMembers = FlxG.state.members;
+		for (i in 0...currentMembers.length)
+		{
+			checkForGraphics(currentMembers[i]);
+		}
 
 		if (FlxG.state.subState != null)
-			for (member in FlxG.state.subState.members)
-				checkForGraphics(member);
+		{
+			var subMembers = FlxG.state.subState.members;
+			for (i in 0...subMembers.length)
+			{
+				checkForGraphics(subMembers[i]);
+			}
+		}
 
 		for (key in currentTrackedAssets.keys())
 		{
-			// if it is not currently contained within the used local assets
 			if (!dumpExclusions.contains(key))
 			{
 				var graphic:FlxGraphic = currentTrackedAssets.get(key);
-				if (!protectedGfx.contains(graphic))
+				if (!protectedGfx.exists(graphic))
 				{
-					destroyGraphic(graphic); // get rid of the graphic
-					currentTrackedAssets.remove(key); // and remove the key from local cache map
-					// trace('deleted $key');
+					destroyGraphic(graphic);
+					currentTrackedAssets.remove(key);
 				}
 			}
 		}
 	}
 
-	/**
-		 * Destroys a given graphic. Make sure to dereference it as well to avoid any issues.
-		 * @param graphic 
-		 */
-	private inline static function destroyGraphic(graphic:FlxGraphic)
+	private static function destroyGraphic(graphic:FlxGraphic)
 	{
-		// free some gpu memory
-		if (graphic != null && graphic.bitmap != null && graphic.bitmap.__texture != null)
-		graphic.bitmap.__texture.dispose();
-		FlxG.bitmap.remove(graphic);
+		if (graphic != null)
+		{
+			if (graphic.bitmap != null)
+			{
+				if (graphic.bitmap.__texture != null)
+				{
+					graphic.bitmap.__texture.dispose();
+				}
+				graphic.bitmap.dispose();
+				#if !flash
+				graphic.bitmap.disposeImage();
+				#end
+			}
+			FlxG.bitmap.remove(graphic);
+			graphic.destroy();
+		}
 	}
 
-	private inline static function __loadBitmap(key:String, ?parentFolder:String = null):BitmapData
+	private static function __loadBitmap(key:String, ?parentFolder:String = null):BitmapData
 	{
-		// A ton of stuff uses .png internally, so we fake it for ATSC
 		var intarnalFile = Path.withoutExtension(key);
 		var file:String = getTexturePath(intarnalFile, parentFolder);
-		var bitmap = NativeFileSystem.getBitmap(file);
+		var bitmap = mikolka.funkin.custom.NativeFileSystem.getBitmap(file);
 		if (bitmap == null)
 		{
 			trace('Bitmap not found: $file | key: $key');
 		}
-
 		return bitmap;
 	}
 
-	/**
-		 * Finds a graphic in the given path. Can give either PNG or ASTC file path.
-		 * @param file 
-		 * @param parentfolder 
-		 * @return String
-		 */
 	private static function getTexturePath(file:String, ?parentfolder:String):String
 	{
-		function astcGetSharedPath(path:String)
+		var cacheKey:String = file + "_" + (parentfolder != null ? parentfolder : "null") + "_" + Paths.currentLevel;
+		if (_pathCache.exists(cacheKey))
 		{
+			return _pathCache.get(cacheKey);
+		}
+
+		function astcGetSharedPath(path:String) {
 			#if ATSC_SUPPORT
-			if (Native.isASTCSupported())
-			{
+			if (backend.Native.isASTCSupported()) {
 				var assetPath = Paths.getSharedPath('$path.astc');
-				if (NativeFileSystem.exists(assetPath))
-					return assetPath;
+				if (mikolka.funkin.custom.NativeFileSystem.exists(assetPath)) return assetPath;
 			}
 			#end
 			return Paths.getSharedPath('$path.png');
 		}
 
-		function astcGetFolderPath(file:String, folder:String)
-		{
+		function astcGetFolderPath(f:String, folder:String) {
 			#if ATSC_SUPPORT
-			if (Native.isASTCSupported())
-			{
-				var assetPath = Paths.getFolderPath('$file.astc', folder);
-				if (NativeFileSystem.exists(assetPath))
-					return assetPath;
+			if (backend.Native.isASTCSupported()) {
+				var assetPath = Paths.getFolderPath('$f.astc', folder);
+				if (mikolka.funkin.custom.NativeFileSystem.exists(assetPath)) return assetPath;
 			}
 			#end
-			return Paths.getFolderPath('$file.png', folder);
+			return Paths.getFolderPath('$f.png', folder);
 		}
+
 		#if MODS_ALLOWED
-		
-		function astcModFolders(path:String)
-		{
+		function astcModFolders(path:String) {
 			#if ATSC_SUPPORT
-			if (Native.isASTCSupported())
-			{
+			if (backend.Native.isASTCSupported()) {
 				var assetPath = Paths.modFolders('$path.astc');
-				if (NativeFileSystem.exists(assetPath))
-					return assetPath;
+				if (mikolka.funkin.custom.NativeFileSystem.exists(assetPath)) return assetPath;
 			}
 			#end
 			return Paths.modFolders('$path.png');
 		}
 
-		var customFile:String = file;
-		if (parentfolder != null)
-			customFile = '$parentfolder/$file';
+		var customFile:String = (parentfolder != null) ? '$parentfolder/$file' : file;
 
-		// Load from level folder in a mod
 		if (Paths.currentLevel != null && Paths.currentLevel != 'shared')
 		{
 			var levelPath = astcModFolders('${Paths.currentLevel}/$customFile');
-			if (NativeFileSystem.exists(levelPath))
+			if (mikolka.funkin.custom.NativeFileSystem.exists(levelPath)) {
+				_pathCache.set(cacheKey, levelPath);
 				return levelPath;
+			}
 		}
 
 		var modded:String = astcModFolders(customFile);
-		if (NativeFileSystem.exists(modded))
+		if (mikolka.funkin.custom.NativeFileSystem.exists(modded)) {
+			_pathCache.set(cacheKey, modded);
 			return modded;
+		}
 		#end
-		if (parentfolder == "mobile")
-			return astcGetSharedPath('mobile/$file');
 
-		if (parentfolder != null)
-			return astcGetFolderPath(file, parentfolder);
+		if (parentfolder == "mobile") {
+			var path = astcGetSharedPath('mobile/$file');
+			_pathCache.set(cacheKey, path);
+			return path;
+		}
 
-		// Load from a level folder
+		if (parentfolder != null) {
+			var path = astcGetFolderPath(file, parentfolder);
+			_pathCache.set(cacheKey, path);
+			return path;
+		}
+
 		if (Paths.currentLevel != null && Paths.currentLevel != 'shared')
 		{
 			var levelPath = astcGetFolderPath(file, Paths.currentLevel);
-			if (NativeFileSystem.exists(levelPath))
+			if (mikolka.funkin.custom.NativeFileSystem.exists(levelPath)) {
+				_pathCache.set(cacheKey, levelPath);
 				return levelPath;
+			}
 		}
-		return astcGetSharedPath(file);
+
+		var finalPath = astcGetSharedPath(file);
+		_pathCache.set(cacheKey, finalPath);
+		return finalPath;
 	}
 }

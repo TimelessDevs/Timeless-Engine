@@ -2,8 +2,9 @@ package backend;
 
 import haxe.Json;
 import lime.utils.Assets;
-
 import objects.Note;
+
+using StringTools;
 
 typedef SwagSong =
 {
@@ -64,7 +65,9 @@ class Song
 	public var gfVersion:String = 'gf';
 	public var format:String = 'psych_v1';
 
-	public static function convert(songJson:Dynamic) // Convert old charts to psych_v1 format
+	private static var _chartCache:Map<String, SwagSong> = new Map<String, SwagSong>();
+
+	public static function convert(songJson:Dynamic) 
 	{
 		if(songJson.gfVersion == null)
 		{
@@ -114,21 +117,22 @@ class Song
 				note[1] = (note[1] % 4) + (gottaHitNote ? 0 : 4);
 
 				if(note[3] != null && !Std.isOfType(note[3], String))
-					note[3] = Note.defaultNoteTypes[note[3]]; //compatibility with Week 7 and 0.1-0.3 psych charts
+					note[3] = Note.defaultNoteTypes[Std.int(note[3])]; 
 			}
 		}
 	}
 
 	public static var chartPath:String;
 	public static var loadedSongName:String;
+	
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
 		if(folder == null) folder = jsonInput;
+		
 		PlayState.SONG = getChart(jsonInput, folder);
 		loadedSongName = folder;
 		chartPath = _lastPath;
 		#if windows
-		// prevent any saving errors by fixing the path on Windows (being the only OS to ever use backslashes instead of forward slashes for paths)
 		chartPath = chartPath.replace('/', '\\');
 		#end
 		StageData.loadDirectory(PlayState.SONG);
@@ -137,32 +141,37 @@ class Song
 
 	static var _lastPath:String;
 
-	//I ADDED V-SLICE CHART SUPPORT!!!!!
 	public static function getChart(jsonInput:String, ?folder:String):SwagSong
 	{
 		if(folder == null) folder = jsonInput;
-		var rawData:String = null;
 		
 		var formattedFolder:String = Paths.formatToSongPath(folder);
 		var formattedSong:String = Paths.formatToSongPath(jsonInput);
+		
+		var cacheKey:String = formattedFolder + "_" + formattedSong + "_" + backend.Difficulty.getString();
+		if (_chartCache.exists(cacheKey))
+		{
+			trace("[TIMELESS CACHE]: Instant chart hit from RAM matrix -> " + cacheKey);
+			return _chartCache.get(cacheKey);
+		}
+
+		var rawData:String = null;
 		_lastPath = Paths.json('$formattedFolder/$formattedSong');
 
 		var vsliceDataFolder:String = 'assets/shared/data/' + formattedFolder + '/';
 		var vsliceChartPath:String = vsliceDataFolder + formattedFolder + '-chart.json';
 		var vsliceMetaPath:String = vsliceDataFolder + 'metadata.json';
 
-		if (NativeFileSystem.exists(vsliceChartPath) && NativeFileSystem.exists(vsliceMetaPath))
+		if (mikolka.funkin.custom.NativeFileSystem.exists(vsliceChartPath) && mikolka.funkin.custom.NativeFileSystem.exists(vsliceMetaPath))
 		{
 			trace("[TIMELESS ENGINE]: V-Slice chart detected for song: " + formattedFolder);
 			try
 			{
-				var chartRaw:String = NativeFileSystem.getContent(vsliceChartPath);
-				var metaRaw:String = NativeFileSystem.getContent(vsliceMetaPath);
+				var chartRaw:String = mikolka.funkin.custom.NativeFileSystem.getContent(vsliceChartPath);
+				var metaRaw:String = mikolka.funkin.custom.NativeFileSystem.getContent(vsliceMetaPath);
 
 				var vChart = haxe.Json.parse(chartRaw);
 				var vMeta = haxe.Json.parse(metaRaw);
-
-				trace("[TIMELESS HYBRID]: Launching runtime memory cross-conversion...");
 				
 				var convertedPack = states.editors.content.VSlice.convertToPsych(vChart, vMeta);
 
@@ -190,22 +199,25 @@ class Song
 						}
 
 						_lastPath = vsliceChartPath;
-
-						trace("[TIMELESS V-SLICE SUPPORT]: V-Slice chart loaded succesfully into RAM core.");
+						_chartCache.set(cacheKey, finalSong);
 						return finalSong;
 					}
 				}
 			}
 			catch(e:haxe.Exception)
 			{
-				trace("[TIMELESS V-SLICE SUPPORT]: Failed to compile V-Slice assets at runtime: " + e.message);
+				trace("[TIMELESS V-SLICE SUPPORT]: Failed to compile V-Slice assets: " + e.message);
 			}
 		}
 
-		if(NativeFileSystem.exists(_lastPath))
-			rawData = NativeFileSystem.getContent(_lastPath);
+		if(mikolka.funkin.custom.NativeFileSystem.exists(_lastPath))
+			rawData = mikolka.funkin.custom.NativeFileSystem.getContent(_lastPath);
 
-		return rawData != null ? parseJSON(rawData, jsonInput) : null;
+		var parsedSong:SwagSong = rawData != null ? parseJSON(rawData, jsonInput) : null;
+		if (parsedSong != null) {
+			_chartCache.set(cacheKey, parsedSong);
+		}
+		return parsedSong;
 	}
 
 	public static function parseJSON(rawData:String, ?nameForError:String = null, ?convertTo:String = 'psych_v1'):SwagSong
@@ -226,7 +238,7 @@ class Song
 			switch(convertTo)
 			{
 				case 'psych_v1':
-					if(!fmt.startsWith('psych_v1')) //Convert to Psych 1.0 format
+					if(!fmt.startsWith('psych_v1')) 
 					{
 						trace('converting chart $nameForError with format $fmt to psych_v1 format...');
 						songJson.format = 'psych_v1_convert';

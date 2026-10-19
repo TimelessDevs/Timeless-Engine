@@ -55,9 +55,17 @@ class Bar extends FlxSpriteGroup
 		if(valueFunction != null)
 		{
 			var value:Null<Float> = FlxMath.remapToRange(FlxMath.bound(valueFunction(), bounds.min, bounds.max), bounds.min, bounds.max, 0, 100);
-			percent = (value != null ? value : 0);
+			var targetPercent:Float = (value != null ? value : 0);
+			
+			if (targetPercent != percent) {
+				@:bypassAccessor percent = targetPercent;
+				updateBar();
+			}
 		}
-		else percent = 0;
+		else if (percent != 0) {
+			@:bypassAccessor percent = 0;
+			updateBar();
+		}
 		super.update(elapsed);
 	}
 	

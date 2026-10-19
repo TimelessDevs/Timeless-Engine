@@ -30,7 +30,10 @@ import lime.graphics.Image;
 @:cppInclude('./external/gamemode_client.h')
 @:cppFileCode('#define GAMEMODE_AUTO')
 #end
+
+#if windows
 @:headerCode('extern "C" __declspec(dllimport) int __stdcall SetDllDirectoryW(const wchar_t* lpPathName);')
+#end
 class Main extends Sprite
 {
 	public static final game = {
@@ -60,7 +63,7 @@ class Main extends Sprite
 
 		#if TITLE_SCREEN_EASTER_EGG
 		if (Date.now().getMonth() == 0 && Date.now().getDate() == 14)
-			Lib.current.stage.window.title = "Friday Night Funkin': Mikolka's Engine";
+			Lib.current.stage.window.title = "Friday Night Funkin': Timeless Engine";
 		#end
 
 		// This requests file access on android (otherwise we will crash later)
@@ -302,9 +305,15 @@ class Main extends Sprite
 
 		if (debugDisplay != null)
 		{
+			#if !mobile
 			debugDisplay.visible = ClientPrefs.data.showFPSOpacity != 0;
 			debugDisplay.backgroundOpacity = ClientPrefs.data.showFPSOpacity;
 			debugDisplay.isAdvanced = ClientPrefs.data.fpsRework;
+			#else
+			debugDisplay.visible = true;
+			debugDisplay.backgroundOpacity = 0.4;
+			debugDisplay.isAdvanced = false;
+			#end
 		}
 
 		#if (debug)
@@ -349,6 +358,16 @@ class Main extends Sprite
 			if (FlxG.game != null)
 				resetSpriteCache(FlxG.game);
 		});
+
+		#if mobile
+		try {
+			var refreshRate:Int = ClientPrefs.data.framerate;
+			if (refreshRate > 0) {
+				FlxG.updateFramerate = refreshRate;
+				FlxG.drawFramerate = refreshRate;
+			}
+		} catch(e:Dynamic) {}
+		#end
 	}
 
 	static function resetSpriteCache(sprite:Sprite):Void

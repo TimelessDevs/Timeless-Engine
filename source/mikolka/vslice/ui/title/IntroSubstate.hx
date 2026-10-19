@@ -27,6 +27,7 @@ class IntroSubstate extends MusicBeatSubstate
 	override function create()
 	{
 		super.create();
+		
 		blackScreen = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
 		blackScreen.scale.set(FlxG.width, FlxG.height);
 		blackScreen.updateHitbox();

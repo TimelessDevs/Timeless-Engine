@@ -182,7 +182,7 @@ class Paths
 	{
 		var baseKey:String = Language.getFileTranslation('images/$key');
 		var extensions:Array<String> = ['.png', '.jpg', '.jpeg', '.webp'];
-		var finalKey:String = baseKey + '.png';
+		var finalKey:String = baseKey + '.png'; // Дефолтный путь
 		var foundExt:String = '.png';
 
 		for (ext in extensions) {
@@ -197,14 +197,26 @@ class Paths
 
 		if (foundExt != '.png') {
 			var fullPathToLoad:String = getPath(finalKey, IMAGE, parentFolder, true);
-			var rawBitmap = NativeFileSystem.getBitmap(fullPathToLoad);
-			
-			if (rawBitmap != null) {
-				rawBitmap.image.transparent = true;
-				rawBitmap.image.premultiplied = true;
-				
-				var virtualPngKey:String = baseKey + '.png';
-				return CacheSystem.cacheBitmap(virtualPngKey, rawBitmap, allowGPU);
+			var virtualPngKey:String = baseKey + '.png';
+
+			if (CacheSystem.currentTrackedAssets.exists(virtualPngKey)) {
+				CacheSystem.localTrackedAssets.set(virtualPngKey, true);
+				return CacheSystem.currentTrackedAssets.get(virtualPngKey);
+			}
+
+			try {
+				var opaqueBitmap = openfl.display.BitmapData.fromFile(fullPathToLoad);
+				if (opaqueBitmap != null) {
+					var transparentBitmap = new openfl.display.BitmapData(opaqueBitmap.width, opaqueBitmap.height, true, 0);
+					
+					transparentBitmap.draw(opaqueBitmap);
+					opaqueBitmap.dispose();
+
+					var forcedGraphic:FlxGraphic = CacheSystem.cacheBitmap(virtualPngKey, transparentBitmap, allowGPU);
+					if (forcedGraphic != null) return forcedGraphic;
+				}
+			} catch(e:Dynamic) {
+				trace("[TIMLESS GRAPHIC CORE EXCEPTION]: Failed loading " + foundExt + " : " + e);
 			}
 		}
 

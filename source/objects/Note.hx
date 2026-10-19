@@ -521,13 +521,13 @@ class Note extends FlxSprite
 
 		if (tooLate && !inEditor)
 		{
-				this.visible = false;
-				return;
+			this.visible = false;
+			return;
 		}
+		
 		if (!isSustainNote) {
-				var isOffscreen:Bool = (this.y < -200 || this.y > flixel.FlxG.height + 200);
-			
-				this.visible = !isOffscreen;
+			var isOffscreen:Bool = (this.y < -200 || this.y > flixel.FlxG.height + 200);
+			this.visible = !isOffscreen;
 		}
 	}
 
@@ -601,7 +601,9 @@ class Note extends FlxSprite
 				swagRect.width = width / scale.x;
 				swagRect.height = (height / scale.y) - swagRect.y;
 			}
-			clipRect = swagRect;
+			if (clipRect == null || clipRect.y != swagRect.y || clipRect.height != swagRect.height) {
+				clipRect = swagRect;
+			}
 		}
 	}
 

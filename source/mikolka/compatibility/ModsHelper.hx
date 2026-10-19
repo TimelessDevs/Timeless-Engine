@@ -72,7 +72,7 @@ class ModsHelper {
 			if(	key.toLowerCase().contains("transitionswag") || 
 				key.contains("bg_graphic_") ||
 				key == "images/justBf.png"
-			) CacheSystem.localTrackedAssets.push(key);
+			) CacheSystem.localTrackedAssets.set(key, true);
 		}
 	}
 	#if sys

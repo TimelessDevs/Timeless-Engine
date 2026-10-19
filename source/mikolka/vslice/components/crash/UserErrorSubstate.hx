@@ -92,7 +92,7 @@ class UserErrorSubstate extends MusicBeatSubstate
 		errorText.camera = camOverlay;
 		add(errorText);
 
-		var actionKey:String = controls.mobileC ? "TAP ANYWHERE" : (isCritical ? "ENTER / ESCAPE" : "ENTER");
+		var actionKey:String = controls.mobileC ? "TAP ANYWHERE" : (isCritical ? "ENTER" : "ENTER");
 		var actionDesc:String = isCritical ? "to restart the game" : "to continue";
 		var hintMsg:String = "Press " + actionKey + " " + actionDesc + ".";
 		#if (sys && !mobile)

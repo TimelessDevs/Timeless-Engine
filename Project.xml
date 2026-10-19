@@ -401,8 +401,6 @@
 	<haxeflag name="--macro" value="allowPackage('flash')" />
 	<haxeflag name="--macro" value="include('my.pack')" />
 
-	<macro name="backend.AutoFixer.run()" />
-
 	<source path="C:/HaxeToolkit/haxe/lib/flixel-addons/4,0,2" />
 	<define name="flixel-addons" value="4.0.2" />
 

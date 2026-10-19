@@ -202,7 +202,7 @@ class LoadingState extends MusicBeatState
 		bg.screenCenter();
 		addBehindBar(bg);
 
-		funkay = new FlxSprite(0, 0).loadGraphic(Paths.image('funkay'));
+		funkay = new FlxSprite(0, 0).loadGraphic(Paths.image('LoadingScreen'));
 		funkay.antialiasing = ClientPrefs.data.antialiasing;
 		funkay.setGraphicSize(0, FlxG.height);
 		funkay.updateHitbox();
@@ -880,7 +880,7 @@ class LoadingState extends MusicBeatState
 			}
 		}
 		mutex.acquire();
-		CacheSystem.localTrackedAssets.push(file);
+		CacheSystem.localTrackedAssets.set(file, true);
 		mutex.release();
 
 		return CacheSystem.currentTrackedSounds.get(file);

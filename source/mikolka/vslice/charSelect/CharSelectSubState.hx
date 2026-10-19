@@ -536,7 +536,9 @@ class CharSelectSubState extends MusicBeatSubState
 					}
 				});
 
-				Save.instance.addCharacterSeen(char);
+				if (Save.instance != null) {
+					Save.instance.addCharacterSeen(char);
+				}
 				if (nonLocks.length == 0)
 				{
 					pressedSelect = false;
@@ -737,15 +739,15 @@ class CharSelectSubState extends MusicBeatSubState
 
 		updateLockAnims();
 
-		if (autoFollow && availableChars.exists(getCurrentSelected()) && Save.instance.charactersSeen.contains(availableChars[getCurrentSelected()]))
+		var isCharVisible:Bool = true;
+		if (Save.instance != null && Save.instance.charactersSeen != null) {
+			isCharVisible = Save.instance.charactersSeen.contains(availableChars[getCurrentSelected()]);
+		}
+
+		if (autoFollow && availableChars.exists(getCurrentSelected()) && isCharVisible)
 		{
 			curChar = availableChars.get(getCurrentSelected());
 			playerChillOut.onAnimationFrame.addOnce((s, i) -> gfChill.visible = true);
-		}
-		else if (autoFollow)
-		{
-			curChar = "locked";
-			gfChill.visible = false;
 		}
 
 		if (autoFollow)
@@ -776,7 +778,13 @@ class CharSelectSubState extends MusicBeatSubState
 	private function onAcceptPress()
 	{
 		if (!allowInput || pressedSelect) return;
-		if (autoFollow && availableChars.exists(getCurrentSelected()) && Save.instance.charactersSeen.contains(availableChars[getCurrentSelected()]))
+		
+		var isCharOpened:Bool = true;
+		if (Save.instance != null && Save.instance.charactersSeen != null) {
+			isCharOpened = Save.instance.charactersSeen.contains(availableChars[getCurrentSelected()]);
+		}
+
+		if (autoFollow && availableChars.exists(getCurrentSelected()) && isCharOpened)
 		{
 			cursorConfirmed.visible = true;
 			cursorConfirmed.x = chrSelectCursor.x - 2;
@@ -784,11 +792,10 @@ class CharSelectSubState extends MusicBeatSubState
 			cursorConfirmed.animation.play("idle", true);
 			grpCursors.visible = false;
 
-			FlxG.sound.play(Paths.sound('CS_confirm'));
+			FunkinSound.playOnce(Paths.sound('CS_confirm'));
 
 			if (FlxG.sound.music != null) {
-				FlxTween.tween(FlxG.sound.music, {pitch: 0.1}, 1, {ease: FlxEase.quadInOut});
-				FlxTween.tween(FlxG.sound.music, {volume: 0.0}, 1.5, {ease: FlxEase.quadInOut});
+				FlxTween.tween(FlxG.sound.music, {volume: 0.0}, 1.2, {ease: FlxEase.quadInOut});
 			}
 
 			playerChill.playAnimation("select");
@@ -814,20 +821,22 @@ class CharSelectSubState extends MusicBeatSubState
 		cursorConfirmed.visible = false;
 		grpCursors.visible = true;
 
-		FlxTween.globalManager.cancelTweensOf(FlxG.sound.music);
-		FlxTween.tween(FlxG.sound.music, {pitch: 1.0, volume: 1.0}, 1, {ease: FlxEase.quartInOut});
+		if (FlxG.sound.music != null) {
+			FlxTween.globalManager.cancelTweensOf(FlxG.sound.music);
+			FlxTween.tween(FlxG.sound.music, {volume: 1.0}, 1.0, {
+				ease: FlxEase.quartInOut,
+				onComplete: function(twn:FlxTween) {
+					if (playerChill.getCurrentAnimation() == "deselect loop start" || playerChill.getCurrentAnimation() == "deselect") {
+						playerChill.playAnimation("idle", true, false, true);
+						gfChill.playAnimation("idle", true, false, true);
+					}
+				}
+			});
+		}
+		
 		playerChill.playAnimation("deselect");
 		gfChill.playAnimation("deselect");
 		pressedSelect = false;
-		FlxTween.tween(FlxG.sound.music, {pitch: 1.0}, 1, {
-			ease: FlxEase.quartInOut,
-			onComplete: (_) -> {
-				if (playerChill.getCurrentAnimation() == "deselect loop start" || playerChill.getCurrentAnimation() == "deselect") {
-					playerChill.playAnimation("idle", true, false, true);
-					gfChill.playAnimation("idle", true, false, true);
-				}
-			}
-		});
 		selectTimer.cancel();
 	}
 

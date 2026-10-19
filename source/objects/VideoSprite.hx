@@ -94,7 +94,19 @@ class VideoSprite extends FlxSpriteGroup {
 		if(alreadyDestroyed)
 			return;
 
-		trace('Video destroyed');
+		trace('Video destroyed - Full RAM Dump initiated');
+		
+		try {
+			if (videoSprite != null) {
+				#if hxvlc
+				videoSprite.stop();
+				#end
+				remove(videoSprite);
+				videoSprite.destroy();
+				videoSprite = null;
+			}
+		} catch(e:Dynamic) {}
+
 		if(cover != null)
 		{
 			remove(cover);
@@ -113,6 +125,13 @@ class VideoSprite extends FlxSpriteGroup {
 				FlxG.state.subState.remove(this);
 		}
 		super.destroy();
+		
+		#if cpp
+		haxe.Timer.delay(function() {
+			cpp.vm.Gc.run(true);
+		}, 150);
+		#end
+		
 		alreadyDestroyed = true;
 	}
 

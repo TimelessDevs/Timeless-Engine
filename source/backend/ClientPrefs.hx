@@ -30,7 +30,10 @@ import states.InitState;
 	public var middleScroll:Bool = false;
 	public var sickOnly:Bool = false;
 	public var crashOnMiss:Bool = false;
-	public var healthDrain:Bool = false;
+	
+	public var healthDrain:Float = 0.0;
+	public var deadlyHealthDrain:Bool = false;
+
 	public var glitchNotesModifier:Float = 0;
 	public var opponentStrums:Bool = true;
 	public var showFPS:Bool = true;
@@ -75,6 +78,7 @@ import states.InitState;
 		[0xFF71E300, 0xFFF6FFE6, 0xFF003100],
 		[0xFFFF884E, 0xFFFFFAF5, 0xFF6C0000]];
 
+	public var clickBetweenFrames:Bool = true;
 	public var ghostTapping:Bool = true;
 	public var timeBarType:String = 'Time Left';
 	public var scoreZoom:Bool = true;
@@ -97,11 +101,15 @@ import states.InitState;
 		// just fine. but I wont implement it because I don't know how you handle sustains and other stuff like that.
 		// oh yeah when you calculate the bps divide it by the songSpeed or rate because it wont scroll correctly when speeds exist.
 		// -kade
+		'clickBetweenFrames' => true,
 		'songspeed' => 1.0,
 		'healthgain' => 1.0,
 		'healthloss' => 1.0,
 		'sickOnly' => false,
 		'instakill' => false,
+		'reverseHealth' => false,
+		'healthDrain' => 0.0,
+		'deadlyHealthDrain' => false,
 		'practice' => false,
 		'botplay' => false,
 		'opponentplay' => false

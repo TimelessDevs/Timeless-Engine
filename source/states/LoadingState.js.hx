@@ -814,7 +814,7 @@ class LoadingState extends MusicBeatState
 				onComplete: (snd) ->
 				{
 					CacheSystem.currentTrackedSounds.set(file, snd);
-					CacheSystem.localTrackedAssets.push(file);
+					CacheSystem.localTrackedAssets.set(file, true);
 				}
 			}
 		}

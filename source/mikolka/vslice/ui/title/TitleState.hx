@@ -37,6 +37,28 @@ class TitleState extends MusicBeatState
 	{
 		CacheSystem.clearStoredMemory();
 		super.create();
+
+		try {
+			var targetFps:Int = ClientPrefs.data.framerate; 
+			
+			if (targetFps > 0) {
+				flixel.FlxG.updateFramerate = targetFps;
+				flixel.FlxG.drawFramerate = targetFps;
+				
+				if (openfl.Lib.current != null && openfl.Lib.current.stage != null) {
+					openfl.Lib.current.stage.frameRate = targetFps;
+				}
+				
+				if (lime.app.Application.current != null && lime.app.Application.current.window != null) {
+					lime.app.Application.current.window.frameRate = targetFps;
+				}
+				
+				trace("[FPS CHANGER]: System application FPS cap forced to: " + targetFps + " Hz");
+			}
+		} catch(e:Dynamic) {
+			trace("[FPS CHANGER ERROR]: Failed to bind window refresh rate: " + e);
+		}
+		
 		CacheSystem.clearUnusedMemory();
 		startIntro();
 	}
