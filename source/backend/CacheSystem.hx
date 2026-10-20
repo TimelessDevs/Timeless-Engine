@@ -42,6 +42,12 @@ class CacheSystem
 		{
 			if (!localTrackedAssets.exists(key) && !dumpExclusions.contains(key))
 			{
+				var lowerKey:String = key.toLowerCase();
+				if (lowerKey.contains("images/characters") || lowerKey.contains("char") || lowerKey.contains("animate") || lowerKey.contains("animation"))
+				{
+					continue;
+				}
+
 				var graphic:FlxGraphic = currentTrackedAssets.get(key);
 				if (graphic != null)
 				{

@@ -312,6 +312,8 @@ class PlayState extends MusicBeatState
 	var _isPythonActive:Bool = false;
 	var _isCSharpActive:Bool = false;
 
+	var _cbfCachedEnabled:Bool = false;
+
 	override public function create()
 	{
 		_lastLoadedModDirectory = Mods.currentModDirectory;
@@ -356,6 +358,8 @@ class PlayState extends MusicBeatState
 		practiceMode = ClientPrefs.getGameplaySetting('practice');
 		cpuControlled = ClientPrefs.getGameplaySetting('botplay');
 		guitarHeroSustains = ClientPrefs.data.guitarHeroSustains;
+
+		_cbfCachedEnabled = ClientPrefs.data.clickBetweenFrames;
 
 		camGame = initPsychCamera();
 		camHUD = new PsychCamera();
@@ -1543,7 +1547,7 @@ class PlayState extends MusicBeatState
 		callOnScripts('onHintPressPre', [buttonCode]);
 		
 		if (button.justPressed) {
-			if (ClientPrefs.data.clickBetweenFrames && FlxG.sound.music != null && FlxG.sound.music.playing) {
+			if (_cbfCachedEnabled && FlxG.sound.music != null && FlxG.sound.music.playing) {
 				Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
 			}
 			keyPressed(buttonCode);
@@ -1589,12 +1593,10 @@ class PlayState extends MusicBeatState
 			if (guitarHeroSustains && n.parent != null && !n.parent.wasGoodHit)
 				return false;
 
-			if (ClientPrefs.data.clickBetweenFrames)
+			if (_cbfCachedEnabled)
 			{
 				var subTickAudioTime:Float = FlxG.sound.music.time + Conductor.offset;
-				
 				var timeNoteDiff:Float = Math.abs(n.strumTime - subTickAudioTime + ClientPrefs.data.ratingOffset);
-				
 				return timeNoteDiff <= Conductor.safeZoneOffset;
 			}
 			else
@@ -1711,7 +1713,7 @@ class PlayState extends MusicBeatState
 					{
 						var released:Bool = !holdArray[n.noteData];
 						if (!released) {
-							if (ClientPrefs.data.clickBetweenFrames && FlxG.sound.music != null && FlxG.sound.music.playing) {
+							if (_cbfCachedEnabled && FlxG.sound.music != null && FlxG.sound.music.playing) {
 								Conductor.songPosition = FlxG.sound.music.time + Conductor.offset;
 							}
 							goodNoteHit(n);
