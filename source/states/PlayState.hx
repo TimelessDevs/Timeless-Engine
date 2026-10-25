@@ -4900,4 +4900,35 @@ class PlayState extends MusicBeatState
 		if(iconP2 != null && iconP2.animation != null && iconP2.animation.curAnim != null) iconP2.animation.curAnim.curFrame = (healthBar != null && healthBar.percent > 80) ? 1 : 0;
 		return health;
 	}
+
+	public function preloadCharacterAnimations(char:objects.Character):Void
+	{
+		if (char == null || char.animation == null) return;
+		
+		try {
+			if (char.graphic != null && char.graphic.bitmap != null) {
+				char.graphic.bitmap.lock();
+			}
+
+			var animsToLoad:Array<String> = ['idle', 'singLEFT', 'singDOWN', 'singUP', 'singRIGHT'];
+			for (anim in animsToLoad) {
+				if (char.animation.exists(anim)) {
+					char.animation.play(anim, true, false, 0);
+					if (char.animation.curAnim != null) {
+						char.animation.curAnim.update(0.001);
+					}
+				}
+				
+				var altAnim:String = anim + "-alt";
+				if (char.animation.exists(altAnim)) {
+					char.animation.play(altAnim, true, false, 0);
+					if (char.animation.curAnim != null) char.animation.curAnim.update(0.001);
+				}
+			}
+			char.dance();
+			trace("[ANIM POOL]: Pre-loading complete for character -> " + char.curCharacter);
+		} catch(e:Dynamic) {
+			trace("[ANIM LOAD]: Pre-loading bypassed: " + e);
+		}
+	}
 }

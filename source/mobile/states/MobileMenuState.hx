@@ -50,13 +50,9 @@ class MobileMenuState extends FlxBasic {
 
 			for (i in 0...buttonsList.length) {
 				var btn = buttonsList[i];
-				FlxTween.tween(btn, {alpha: 0, y: FlxG.height + 200}, 0.5, {
-					ease: FlxEase.backIn,
-					startDelay: i * 0.04,
-					onComplete: function(twn:FlxTween) {
-						btn.kill();
-					}
-				});
+				if (btn != null && btn != s) {
+					btn.kill();
+				}
 			}
 		});
 
@@ -74,6 +70,7 @@ class MobileMenuState extends FlxBasic {
 			FlxTransitionableState.skipNextTransIn = true;
 			FlxTransitionableState.skipNextTransOut = true;
 
+			host.openSubState(new FreeplayState());
 			host.openSubState(new FreeplayState());
 			host.subStateOpened.addOnce(state -> {
 				grid.revealButtons();
@@ -123,13 +120,7 @@ class MobileMenuState extends FlxBasic {
 
 		for (i in 0...buttonsList.length) {
 			var btn = buttonsList[i];
-			var targetY:Float = btn.y;
-			btn.y += 180;
-			btn.alpha = 0;
-			FlxTween.tween(btn, {alpha: 1, y: targetY}, 0.65, {
-				ease: FlxEase.backOut, 
-				startDelay: i * 0.08
-			});
+			btn.alpha = 1;
 		}
 
 		#if TOUCH_CONTROLS_ALLOWED

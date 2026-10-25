@@ -359,7 +359,6 @@ class Main extends Sprite
 				resetSpriteCache(FlxG.game);
 		});
 
-		#if mobile
 		try {
 			var refreshRate:Int = ClientPrefs.data.framerate;
 			if (refreshRate > 0) {
@@ -367,7 +366,6 @@ class Main extends Sprite
 				FlxG.drawFramerate = refreshRate;
 			}
 		} catch(e:Dynamic) {}
-		#end
 	}
 
 	static function resetSpriteCache(sprite:Sprite):Void

@@ -121,14 +121,7 @@ class DesktopMenuState extends FlxBasic
 				menuItem.screenCenter(X);
 			}
 			
-			var targetY:Float = menuItem.y;
-			menuItem.y += 180;
-			menuItem.alpha = 0;
-			
-			FlxTween.tween(menuItem, {alpha: 1, y: targetY}, 0.65, {
-				ease: FlxEase.backOut, 
-				startDelay: i * 0.08
-			});
+			menuItem.alpha = 1;
 		}
 
 		FlxG.camera.follow(camFollow, null, 0.06);
@@ -248,14 +241,7 @@ class DesktopMenuState extends FlxBasic
 						if (i == curSelected)
 							continue;
 						
-						FlxTween.tween(menuItems.members[i], {alpha: 0, y: FlxG.height + 200}, 0.5, {
-							ease: FlxEase.backIn,
-							startDelay: i * 0.04,
-							onComplete: function(twn:FlxTween)
-							{
-								menuItems.members[i].kill();
-							}
-						});
+						menuItems.members[i].kill();
 					}
 				}
 			}

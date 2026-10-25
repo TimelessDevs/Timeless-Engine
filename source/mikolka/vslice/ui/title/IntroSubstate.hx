@@ -72,7 +72,7 @@ class IntroSubstate extends MusicBeatSubstate
 		switch (sickBeats)
 		{
 			case 2:
-				createCoolText(['Funkin Crew Inc', 'Shadow Mario', 'Timeless']);
+				createCoolText(['Funkin Crew Inc', 'Shadow Mario', 'mikolka', 'Timeless']);
 			case 4:
 				addMoreText('present');
 			case 5:

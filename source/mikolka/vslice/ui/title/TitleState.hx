@@ -131,7 +131,7 @@ class TitleState extends MusicBeatState
 		add(logoBl);
 		add(titleText);
 
-		if (initialized)
+		if (initialized)	
 			skipIntro();
 		else
 		{
