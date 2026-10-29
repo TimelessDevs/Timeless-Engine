@@ -64,7 +64,7 @@ class RuntimeErectShader extends FlxShader
 				float alphaAlpha = flixel_texture2D(bitmap, uv - offset).a;
 				
 				if (alphaAlpha < 0.9) {
-					float edgeGlow = smoothstep(0.9, u_fadeouts[i], alphaAlpha);
+					float edgeGlow = smoothstep(0.9, u_fadeouts[i] * 0.9, alphaAlpha);
 					vec3 mixedColor = mix(u_colors[i], u_colors2[i], u_gradients[i]);
 					
 					float aaFactor = smoothstep(0.0, fwidth(alphaAlpha), 0.9 - alphaAlpha);
@@ -87,6 +87,7 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 	var points:Array<ShaderPointData> = [];
 	var curPointIndex:Int = -1;
 	var isDraggingWheel:Bool = false;
+    var bpmTimer:Float = 0.0;
 
 	var targets:Map<String, Bool> = [
 		"opponent" => false,
@@ -101,7 +102,7 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 	var dadPreview:FlxSprite;
 	var bfPreview:FlxSprite;
 	var pointWheelBg:FlxSprite;
-	var pointWheelMarker:FlxSprite;
+	var pointMarkers:Array<FlxSprite> = [];
 	
 	var shaderNameInput:PsychUIInputText;
 	var luaNameInput:PsychUIInputText;
@@ -139,7 +140,7 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		var dadXml:String = '<?xml version="1.0" encoding="UTF-8"?><TextureAtlas imagePath="DADDY_DEAREST.png"><SubTexture name="idle0001" x="1723" y="8" width="421" height="767" frameX="-5" frameY="-0" frameWidth="429" frameHeight="767" /><SubTexture name="idle0002" x="1723" y="8" width="421" height="767" frameX="-5" frameY="-0" frameWidth="429" frameHeight="767" /><SubTexture name="idle0003" x="1820" y="791" width="429" height="759" frameX="-0" frameY="-8" frameWidth="429" frameHeight="767" /><SubTexture name="idle0004" x="1820" y="791" width="429" height="759" frameX="-0" frameY="-8" frameWidth="429" frameHeight="767" /><SubTexture name="idle0005" x="2265" y="783" width="425" height="758" frameX="-1" frameY="-9" frameWidth="429" frameHeight="767" /><SubTexture name="idle0006" x="2265" y="783" width="425" height="758" frameX="-1" frameY="-9" frameWidth="429" frameHeight="767" /><SubTexture name="idle0007" x="2160" y="8" width="424" height="759" frameX="-2" frameY="-8" frameWidth="429" frameHeight="767" /><SubTexture name="idle0008" x="2160" y="8" width="424" height="759" frameX="-2" frameY="-8" frameWidth="429" frameHeight="767" /></TextureAtlas>';
 		var bfXml:String = '<?xml version="1.0" encoding="utf-8"?><TextureAtlas imagePath="BOYFRIEND.png"><SubTexture name="BF idle dance0000" x="3189" y="868" width="406" height="392" frameX="-1" frameY="-20" frameWidth="411" frameHeight="412" /><SubTexture name="BF idle dance0001" x="3189" y="868" width="406" height="392" frameX="-1" frameY="-20" frameWidth="411" frameHeight="412" /><SubTexture name="BF idle dance0002" x="3597" y="868" width="408" height="393" frameX="0" frameY="-19" frameWidth="411" frameHeight="412" /><SubTexture name="BF idle dance0003" x="3597" y="868" width="408" height="393" frameX="0" frameY="-19" frameWidth="411" frameHeight="412" /><SubTexture name="BF idle dance0004" x="2" y="1311" width="405" height="398" frameX="-3" frameY="-14" frameWidth="411" frameHeight="412" /><SubTexture name="BF idle dance0005" x="2" y="1311" width="405" height="398" frameX="-3" frameY="-14" frameWidth="411" frameHeight="412" /></TextureAtlas>';
 
-		dadPreview = new FlxSprite(30, 110);
+		dadPreview = new FlxSprite(20, 80);
 		dadPreview.frames = FlxAtlasFrames.fromSparrow(Paths.image('characters/DADDY_DEAREST'), dadXml);
 		dadPreview.animation.addByPrefix('idle', 'idle', 24, false);
 		dadPreview.animation.play('idle');
@@ -149,12 +150,12 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		dadPreview.shader = dadShader;
 		add(dadPreview);
 
-		bfPreview = new FlxSprite(240, 230);
+		bfPreview = new FlxSprite(260, 240);
 		bfPreview.frames = FlxAtlasFrames.fromSparrow(Paths.image('characters/BOYFRIEND'), bfXml);
 		bfPreview.animation.addByPrefix('idle', 'BF idle dance', 24, false);
 		bfPreview.animation.play('idle');
 		bfPreview.antialiasing = true;
-		bfPreview.scale.set(0.7, 0.7);
+		bfPreview.scale.set(0.75, 0.75);
 		bfPreview.updateHitbox();
 		bfPreview.shader = bfShader;
 		add(bfPreview);
@@ -163,10 +164,14 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		editorBox.scrollFactor.set();
 		editorBox.cameras = [camUI];
 		add(editorBox);
-
-		addNewPoint();
 		
 		FlxG.mouse.visible = true;
+
+		shaderNameInput = new PsychUIInputText(15, 25, 130, 'timeless_erect', 8);
+		luaNameInput = new PsychUIInputText(165, 25, 130, 'timeless_erect', 8);
+
+		addNewPoint();
+		refreshSettingsTab();
 	}
 
 	function refreshLightTab()
@@ -248,17 +253,17 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 
 			if (pt.isExpanded)
 			{
-				var radSlider = new PsychUISlider(objX + 20, objY + 10, function(v:Float) { pt.radius = v; updateRealtimeShaders(); }, pt.radius, 0.01, 1.0, 160);
-				radSlider.label = 'Radius'; tab.add(radSlider); objY += 32;
+				var radSlider = new PsychUISlider(objX + 20, objY + 12, function(v:Float) { pt.radius = v; updateRealtimeShaders(); }, pt.radius, 0.01, 1.0, 160);
+				radSlider.label = 'Radius'; tab.add(radSlider); objY += 40;
 
-				var intensSlider = new PsychUISlider(objX + 20, objY + 10, function(v:Float) { pt.brightness = v; updateRealtimeShaders(); }, pt.brightness, 0.0, 5.0, 160);
-				intensSlider.label = 'Intensity'; tab.add(intensSlider); objY += 32;
+				var intensSlider = new PsychUISlider(objX + 20, objY + 12, function(v:Float) { pt.brightness = v; updateRealtimeShaders(); }, pt.brightness, 0.0, 5.0, 160);
+				intensSlider.label = 'Intensity'; tab.add(intensSlider); objY += 40;
 
-				var fadeSlider = new PsychUISlider(objX + 20, objY + 10, function(v:Float) { pt.fadeout = v; updateRealtimeShaders(); }, pt.fadeout, 0.0, 0.9, 160);
-				fadeSlider.label = 'Fade-Out'; tab.add(fadeSlider); objY += 32;
+				var fadeSlider = new PsychUISlider(objX + 20, objY + 12, function(v:Float) { pt.fadeout = v; updateRealtimeShaders(); }, pt.fadeout, 0.0, 0.9, 160);
+				fadeSlider.label = 'Fade-Out'; tab.add(fadeSlider); objY += 40;
 
-				var gradSlider = new PsychUISlider(objX + 20, objY + 10, function(v:Float) { pt.gradient = v; updateRealtimeShaders(); }, pt.gradient, 0.0, 1.0, 160);
-				gradSlider.label = 'Gradient'; tab.add(gradSlider); objY += 35;
+				var gradSlider = new PsychUISlider(objX + 20, objY + 12, function(v:Float) { pt.gradient = v; updateRealtimeShaders(); }, pt.gradient, 0.0, 1.0, 160);
+				gradSlider.label = 'Gradient'; tab.add(gradSlider); objY += 45;
 			}
 		}
 
@@ -271,17 +276,38 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		FlxSpriteUtil.drawLine(pointWheelBg, 85, 5, 85, 155, {color: FlxColor.fromRGB(90, 90, 110, 130), thickness: 1});
 		tab.add(pointWheelBg);
 
-		pointWheelMarker = new FlxSprite(0, 0).makeGraphic(12, 12, FlxColor.GREEN);
-		pointWheelMarker.visible = false;
-		tab.add(pointWheelMarker);
+		for (m in pointMarkers) {
+			if (m != null) m.destroy();
+		}
+		pointMarkers = [];
 
-		if (curPointIndex > -1 && curPointIndex < points.length) {
-			var pt = points[curPointIndex];
-			pointWheelMarker.visible = true;
-			pointWheelMarker.setPosition(
-				editorBox.x + tab.x + pointWheelBg.x + (pt.x * pointWheelBg.width) - 6,
-				editorBox.y + tab.y + pointWheelBg.y + (pt.y * pointWheelBg.height) - 6
+		for (i in 0...points.length)
+		{
+			var pt = points[i];
+			var cleanHex = pt.colorHex.trim();
+			if (cleanHex.length != 6) cleanHex = "FFFFFF";
+			var ptColor = FlxColor.fromString("#" + cleanHex);
+
+			var markerSize:Int = (curPointIndex == i) ? 14 : 10;
+			var marker = new FlxSprite(0, 0).makeGraphic(markerSize, markerSize, ptColor);
+			
+			if (curPointIndex == i) {
+				FlxSpriteUtil.drawCircle(marker, 7, 7, 6, FlxColor.TRANSPARENT, {color: FlxColor.GREEN, thickness: 2});
+			}
+
+			var rad:Float = pt.angle * (Math.PI / 180);
+			var orbitX:Float = 85 + (Math.cos(rad) * 74);
+			var orbitY:Float = 80 + (Math.sin(rad) * 74);
+
+			var offsetDist:Float = markerSize / 2;
+
+			marker.setPosition(
+				editorBox.x + tab.x + pointWheelBg.x + orbitX - offsetDist,
+				editorBox.y + tab.y + pointWheelBg.y + orbitY - offsetDist
 			);
+			
+			tab.add(marker);
+			pointMarkers.push(marker);
 		}
 
 		objY += 180;
@@ -305,10 +331,7 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		var objX = 15;
 		var objY = 25;
 
-		shaderNameInput = new PsychUIInputText(objX, objY, 130, 'timeless_erect', 8);
 		shaderNameInput.cameras = [camUI];
-		
-		luaNameInput = new PsychUIInputText(objX + 150, objY, 130, 'timeless_erect', 8);
 		luaNameInput.cameras = [camUI];
 
 		var label1 = new FlxText(shaderNameInput.x, shaderNameInput.y - 15, 120, 'Shader Name:');
@@ -316,7 +339,10 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		var label2 = new FlxText(luaNameInput.x, luaNameInput.y - 15, 120, 'Lua Name:');
 		label2.cameras = [camUI];
 
-		tab.add(label1); tab.add(label2); tab.add(shaderNameInput); tab.add(luaNameInput);
+		tab.add(label1); 
+		tab.add(label2); 
+		tab.add(shaderNameInput); 
+		tab.add(luaNameInput);
 
 		objY += 55;
 		var targetLabel = new FlxText(objX, objY - 15, 200, 'Targets Config:');
@@ -384,6 +410,7 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 	{
 		curPointIndex = index;
 		refreshLightTab();
+		refreshSettingsTab();
 	}
 
 	function deletePoint(index:Int)
@@ -465,8 +492,13 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 	{
 		super.update(elapsed);
 
-		if (dadPreview.animation.finished) dadPreview.animation.play('idle', true);
-		if (bfPreview.animation.finished) bfPreview.animation.play('idle', true);
+		bpmTimer += elapsed;
+		var crotchet81:Float = 60.0 / 81.0; 
+		if (bpmTimer >= crotchet81) {
+			bpmTimer = 0.0;
+			dadPreview.animation.play('idle', true);
+			bfPreview.animation.play('idle', true);
+		}
 
 		var mouseX = FlxG.mouse.x;
 		var mouseY = FlxG.mouse.y;
@@ -476,13 +508,10 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 			mouseY = Std.int(FlxG.touches.list[0].y);
 		}
 
-		if (FlxG.mouse.justPressed && PsychUIInputText.focusOn != null) {
-			if (!FlxG.mouse.overlaps(shaderNameInput) && !FlxG.mouse.overlaps(luaNameInput)) {
-				PsychUIInputText.focusOn = null;
-			}
+		if (PsychUIInputText.focusOn != null) {
+			if (FlxG.keys.justPressed.ENTER) PsychUIInputText.focusOn = null;
+			return; 
 		}
-
-		if (PsychUIInputText.focusOn != null) return;
 
 		var tab = editorBox.getTab('Light').menu;
 		var realWheelX = editorBox.x + tab.x + pointWheelBg.x;
@@ -490,7 +519,28 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 
 		if (FlxG.mouse.justPressed || (FlxG.touches.list.length > 0 && FlxG.touches.list[0].justPressed))
 		{
-			if (mouseX >= realWheelX && mouseX <= (realWheelX + pointWheelBg.width) &&
+			var foundTarget:Bool = false;
+			for (i in 0...pointMarkers.length)
+			{
+				var m = pointMarkers[i];
+				if (m != null && m.visible)
+				{
+					var mGlobalX:Float = realWheelX + m.x;
+					var mGlobalY:Float = realWheelY + m.y;
+
+					if (mouseX >= (mGlobalX - 6) && mouseX <= (mGlobalX + m.width + 6) &&
+						mouseY >= (mGlobalY - 6) && mouseY <= (mGlobalY + m.height + 6))
+					{
+						isDraggingWheel = true;
+						curPointIndex = i;
+						refreshLightTab();
+						foundTarget = true;
+						break;
+					}
+				}
+			}
+
+			if (!foundTarget && mouseX >= realWheelX && mouseX <= (realWheelX + pointWheelBg.width) &&
 				mouseY >= realWheelY && mouseY <= (realWheelY + pointWheelBg.height))
 			{
 				isDraggingWheel = true;
@@ -505,17 +555,21 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		if (isDraggingWheel && curPointIndex > -1 && curPointIndex < points.length)
 		{
 			var pt = points[curPointIndex];
-			var dx = mouseX - (realWheelX + 85);
-			var dy = mouseY - (realWheelY + 80);
 			
-			pt.angle = Math.atan2(dy, dx) * (180 / Math.PI);
-			if (pt.angle < 0) pt.angle += 360;
+			var wheelCenterX:Float = realWheelX + 85;
+			var wheelCenterY:Float = realWheelY + 80;
+			
+			var dx = mouseX - wheelCenterX;
+			var dy = mouseY - wheelCenterY;
+			
+			var deltaAngle:Float = Math.atan2(dy, dx) * (180 / Math.PI);
+			if (deltaAngle < 0) deltaAngle += 360;
+			pt.angle = deltaAngle;
 
-			var rad = Math.atan2(dy, dx);
+			var rad = deltaAngle * (Math.PI / 180);
 			pt.x = 0.5 + (Math.cos(rad) * 0.5);
-			pt.y = 0.5 + (Math.sin(rad) * 0.5);
-
-			selectPoint(curPointIndex);
+			pt.y = 0.5 + (Math.sin(ra
+			refreshLightTab();
 			updateRealtimeShaders();
 		}
 
@@ -564,7 +618,7 @@ void main() {
 		if (alphaAlpha < 0.9) {
 			float edgeGlow = smoothstep(0.9, u_fadeouts[i], alphaAlpha);
 			vec3 mixedColor = mix(u_colors[i], u_colors2[i], u_gradients[i]);
-			float aaFactor = smoothstep(0.0, fwidth(alphaAlpha), 0.9 - alphaAlpha);
+			float aaFactor = smoothstep(0.0, 0.05, 0.9 - alphaAlpha);
 			totalRimLight += mixedColor * u_brightnesses[i] * edgeGlow * aaFactor;
 		}
 	}
