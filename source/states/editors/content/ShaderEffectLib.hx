@@ -433,7 +433,7 @@ fx_rgb = mix(fx_rgb, ' + g.bl(L, 'blend', 'fx_rgb', 'rc') + ', rim * k);';
 			return s;
 		}, function(L) return 2 * q3(L, 'quality', 8, 16, 24));
 
-		reg('glow', 'Glow / Bloom', 'Light', COL, 'Outer glow around the sprite, or additive bloom of bright parts.',
+		reg('glow', 'Bloom', 'Light', COL, 'Outer glow around the sprite, or additive bloom of bright parts.',
 			[E('mode', 'Mode', ['Outer glow', 'Bloom (additive)'], 0), C('color', 'Color', 'FFD54F'), F('rad', 'Radius (px)', 10, 1, 80, 0.5, 1), F('int', 'Intensity', 1, 0, 8, 0.05),
 			 F('thr', 'Threshold', 0.3, 0, 1, 0.02), E('quality', 'Quality', ['Low (12)', 'Medium (20)', 'High (32)'], 1)], function(g, L)
 		{
@@ -639,7 +639,7 @@ fx_rgb = mix(fx_rgb, hl, k);
 fx_a *= mix(1.0, ${P("alpha")} * mix(1.0, scn, ${P("scan")} * 0.5) * fl, k);';
 		});
 
-		// ===========================stylize
+		// ============================== stylize
 		reg('halftone', 'Halftone', 'Stylize', COL, 'Comic book dots.',
 			[F('size', 'Dot size (px)', 6, 2, 40, 0.5, 1), F('ang', 'Angle', 45, -360, 360, 5, 0), F('soft', 'Softness', 0.12, 0.001, 0.5, 0.01), E('mode', 'Mode', ['Mono', 'Color'], 0),
 			 C('ink', 'Ink', '101010'), C('paper', 'Paper', 'F4EBD0')], function(g, L)

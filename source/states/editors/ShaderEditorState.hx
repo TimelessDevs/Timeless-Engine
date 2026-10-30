@@ -165,7 +165,7 @@ class ShaderEditorState extends MusicBeatState implements PsychUIEventHandler.Ps
 		add(bg);
 		changeTheme((saveData.data.theme != null) ? saveData.data.theme : 'default', false);
 
-		// ---- project (restore the last session, or start from the classic rim light preset)
+		// ---- project (restore the last session, or start from the classic light preset)
 		proj = null;
 		if (saveData.data.autosave != null)
 		{

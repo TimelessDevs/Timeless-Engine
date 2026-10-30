@@ -5,8 +5,8 @@ import states.editors.content.ShaderProject.ShaderLayer;
 class ShaderPresets
 {
 	public static final names:Array<String> = [
-		'Rim Light (original)', 'Neon Outline', 'VHS Tape', 'Glitch', 'Hologram', 'Night Tint', 'Underwater', 'Heat Haze', 'Dissolve Out', 'Comic Halftone',
-		'Old Film', 'Vaporwave', 'Toon + Ink', 'Golden Shine', 'Beat Pulse', 'Pixel Art', 'Ghost Echo', 'Dream Blur'
+		'Light', 'Neon', 'VHS Tape', 'Glitch', 'Hologram', 'Night Tint', 'Underwater', 'Heat Haze', 'Dissolve Out', 'Comic',
+		'Old Film', 'Vaporwave', 'Toon + Ink', 'Shine', 'Beat Pulse', 'Pixel', 'Ghost Echo', 'Blur'
 	];
 
 	static function mk(p:ShaderProject, type:String, ?vals:Dynamic, opacity:Float = 1.0, ?mask:Array<Dynamic>, ?anim:Array<Dynamic>):ShaderLayer
@@ -41,9 +41,9 @@ class ShaderPresets
 	{
 		switch (name)
 		{
-			case 'Rim Light (original)':
+			case 'Light':
 				mk(p, 'rim', {ca: 'FFFFFF', cb: 'FFFFFF', size: 10, ang: 270, thr: 0.9, fade: 0, bright: 1.2});
-			case 'Neon Outline':
+			case 'Neon':
 				mk(p, 'coloradjust', {sat: 1.2, contrast: 1.1});
 				mk(p, 'glow', {mode: 0, color: 'FF00E5', rad: 14, int: 2.0});
 				mk(p, 'outline', {color: 'FF9CF5', thick: 2, pos: 0}, 1.0, null, ['opacity', 1, 1.5, 0.15]);
@@ -76,7 +76,7 @@ class ShaderPresets
 				mk(p, 'glow', {mode: 1, color: 'FF8844', rad: 10, int: 0.6, thr: 0.4});
 			case 'Dissolve Out':
 				mk(p, 'dissolve', {th: 0.0, scale: 14, ew: 0.08, ecol: 'FF7A00', ep: 3}, 1.0, null, ['th', 2, 0.25, 0.5, 0.25]);
-			case 'Comic Halftone':
+			case 'Comic':
 				mk(p, 'posterize', {lv: 6});
 				mk(p, 'halftone', {size: 6, ang: 45, mode: 1, soft: 0.15}, 0.85);
 				mk(p, 'outline', {color: '111111', thick: 2, pos: 0});
@@ -95,7 +95,7 @@ class ShaderPresets
 				mk(p, 'toon', {steps: 3, smooth: 0.06});
 				mk(p, 'outline', {color: '000000', thick: 2, pos: 0});
 				mk(p, 'rim', {ca: 'FFFFFF', cb: 'FFFFFF', size: 7, ang: 300, bright: 0.8});
-			case 'Golden Shine':
+			case 'Shine':
 				mk(p, 'coloradjust', {sat: 1.15, contrast: 1.05});
 				mk(p, 'rim', {ca: 'FFE08A', cb: 'FFB300', grad: 0.6, size: 9, ang: 300, bright: 1.4});
 				mk(p, 'shine', {color: 'FFFFFF', ang: 30, width: 0.14, speed: 0.5, gap: 1.2, int: 1.2});
@@ -103,14 +103,14 @@ class ShaderPresets
 				mk(p, 'transform', {zx: 1.0, zy: 1.0}, 1.0, null, ['zx', 6, 1, 0.06]);
 				mk(p, 'flash', {color: 'FFFFFF', pow: 3, int: 0.5});
 				mk(p, 'chroma', {amt: 0}, 1.0, null, ['amt', 6, 1, 5]);
-			case 'Pixel Art':
+			case 'Pixel':
 				mk(p, 'pixelate', {size: 4});
 				mk(p, 'posterize', {lv: 16});
 				mk(p, 'dither', {lv: 8, str: 0.6, size: 1}, 0.7);
 			case 'Ghost Echo':
 				mk(p, 'echo', {ox: 14, oy: 0, fade: 0.6, int: 0.7, tint: '9DB8FF', copies: 2}, 1.0, null, ['ox', 1, 1.2, 8]);
 				mk(p, 'alpha', {mult: 0.9, pow: 1});
-			case 'Dream Blur':
+			case 'Blur':
 				mk(p, 'blur', {rad: 3, quality: 1});
 				mk(p, 'glow', {mode: 1, color: 'FFFFFF', rad: 16, int: 0.9, thr: 0.35});
 				mk(p, 'coloradjust', {sat: 1.15, bright: 0.04, contrast: 0.95});
