@@ -151,64 +151,11 @@ class Song
 		var cacheKey:String = formattedFolder + "_" + formattedSong + "_" + backend.Difficulty.getString();
 		if (_chartCache.exists(cacheKey))
 		{
-			trace("[TIMELESS CACHE]: Instant chart hit from RAM matrix -> " + cacheKey);
 			return _chartCache.get(cacheKey);
 		}
 
 		var rawData:String = null;
 		_lastPath = Paths.json('$formattedFolder/$formattedSong');
-
-		var vsliceDataFolder:String = 'assets/shared/data/' + formattedFolder + '/';
-		var vsliceChartPath:String = vsliceDataFolder + formattedFolder + '-chart.json';
-		var vsliceMetaPath:String = vsliceDataFolder + 'metadata.json';
-
-		if (mikolka.funkin.custom.NativeFileSystem.exists(vsliceChartPath) && mikolka.funkin.custom.NativeFileSystem.exists(vsliceMetaPath))
-		{
-			trace("[TIMELESS ENGINE]: V-Slice chart detected for song: " + formattedFolder);
-			try
-			{
-				var chartRaw:String = mikolka.funkin.custom.NativeFileSystem.getContent(vsliceChartPath);
-				var metaRaw:String = mikolka.funkin.custom.NativeFileSystem.getContent(vsliceMetaPath);
-
-				var vChart = haxe.Json.parse(chartRaw);
-				var vMeta = haxe.Json.parse(metaRaw);
-				
-				var convertedPack = states.editors.content.VSlice.convertToPsych(vChart, vMeta);
-
-				if (convertedPack != null && convertedPack.difficulties != null)
-				{
-					var targetDiff:String = "normal";
-					try {
-						targetDiff = Paths.formatToSongPath(backend.Difficulty.getString());
-					} catch(e:Dynamic) {}
-
-					var finalSong:SwagSong = null;
-					if (convertedPack.difficulties.exists(targetDiff)) {
-						finalSong = convertedPack.difficulties.get(targetDiff);
-					} else {
-						for (diffKey in convertedPack.difficulties.keys()) {
-							finalSong = convertedPack.difficulties.get(diffKey);
-							break;
-						}
-					}
-
-					if (finalSong != null)
-					{
-						if (convertedPack.events != null && convertedPack.events.events != null) {
-							finalSong.events = convertedPack.events.events;
-						}
-
-						_lastPath = vsliceChartPath;
-						_chartCache.set(cacheKey, finalSong);
-						return finalSong;
-					}
-				}
-			}
-			catch(e:haxe.Exception)
-			{
-				trace("[TIMELESS V-SLICE SUPPORT]: Failed to compile V-Slice assets: " + e.message);
-			}
-		}
 
 		if(mikolka.funkin.custom.NativeFileSystem.exists(_lastPath))
 			rawData = mikolka.funkin.custom.NativeFileSystem.getContent(_lastPath);

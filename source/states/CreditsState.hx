@@ -84,7 +84,7 @@ class CreditsState extends MusicBeatState
 		#end
 
 		var defaultList:Array<Array<String>> = [
-			['Timeless Engine Developer'],
+			['Timeless Engine Team'],
 			['Timeless',			'timeless',			'Main Programmer, artist and Head of Timeless Engine',								 'https://discord.com',									'2ebcfa'],
 			[""],
 			["Timeless server"],

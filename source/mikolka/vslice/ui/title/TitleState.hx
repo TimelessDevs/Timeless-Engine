@@ -89,7 +89,7 @@ class TitleState extends MusicBeatState
 		Conductor.bpm = musicBPM;
 
 		logoBl = new FlxSprite(0, 40);
-		logoBl.loadGraphic(Paths.image('logoBumpin'));
+		logoBl.loadGraphic(Paths.image('titleLogo'));
 		logoBl.antialiasing = VsliceOptions.ANTIALIASING;
 		logoBl.updateHitbox();
 		

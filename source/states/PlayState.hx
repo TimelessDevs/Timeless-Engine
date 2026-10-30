@@ -187,13 +187,6 @@ class PlayState extends MusicBeatState
 	var timelessDadTintTween:flixel.tweens.FlxTween;
 	var timelessGFTintTween:flixel.tweens.FlxTween;
 
-	var timelessFlashBF:flixel.tweens.FlxTween;
-	var timelessFlashDad:flixel.tweens.FlxTween;
-	var timelessFlashGF:flixel.tweens.FlxTween;
-	var timelessFlashStage:flixel.tweens.FlxTween;
-
-	var timelessConsole:states.TimelessConsole;
-
 	public var guitarHeroSustains:Bool = false;
 	public var instakillOnMiss:Bool = false;
 	public var cpuControlled:Bool = false;
@@ -815,9 +808,6 @@ class PlayState extends MusicBeatState
 		addTouchPadCamera();
 		#end
 
-		timelessConsole = new states.TimelessConsole(this);
-		add(timelessConsole);
-
 		super.create();
 
 		cacheCountdown();
@@ -863,165 +853,6 @@ class PlayState extends MusicBeatState
 			timelessErrorText.updateHitbox();
 			timelessErrorTimer = 5.0;
 			trace("[HUD CATCHED ERROR]: " + errorMessage);
-		}
-	}
-	public function executeTimelessSilhouetteEvent(val1:String, val2:String):Void
-	{
-		try {
-			var opponentColor:String = "0xFFFFFFFF";
-			var bfColor:String = "0xFFFFFFFF";
-			var gfColor:String = "0xFFFFFFFF";
-			var stageColor:String = "0xFF000000";
-			var duration:Float = 1.0;
-
-			if (val1 != null && val1.trim() != "") {
-				var split1:Array<String> = val1.split(',');
-				if (split1[0] != null) opponentColor = split1[0].trim();
-				if (split1[1] != null) bfColor = split1[1].trim();
-				if (split1[2] != null) gfColor = split1[2].trim();
-			}
-
-			if (val2 != null && val2.trim() != "") {
-				var split2:Array<String> = val2.split(',');
-				if (split2[0] != null) stageColor = split2[0].trim();
-				if (split2[1] != null) duration = Std.parseFloat(split2[1].trim());
-			}
-
-			var colorDad:Int = Std.parseInt(opponentColor);
-			var colorBF:Int = Std.parseInt(bfColor);
-			var colorGF:Int = Std.parseInt(gfColor);
-			var colorStage:Int = Std.parseInt(stageColor);
-
-			if (timelessStageTintTween != null) timelessStageTintTween.cancel();
-			if (timelessBFTintTween != null) timelessBFTintTween.cancel();
-			if (timelessDadTintTween != null) timelessDadTintTween.cancel();
-			if (timelessGFTintTween != null) timelessGFTintTween.cancel();
-
-			if (dad != null) dad.color = colorDad;
-			if (boyfriend != null) boyfriend.color = colorBF;
-			if (gf != null) gf.color = colorGF;
-
-			for (sprite in members) {
-				if (sprite != boyfriendGroup && sprite != dadGroup && sprite != gfGroup && Std.isOfType(sprite, flixel.FlxSprite)) {
-					var targetSprite:flixel.FlxSprite = cast sprite;
-					targetSprite.color = colorStage;
-				}
-			}
-
-			if (duration > 0) {
-				if (dad != null) {
-					timelessDadTintTween = flixel.tweens.FlxTween.color(dad, duration, colorDad, 0xFFFFFFFF, {ease: flixel.tweens.FlxEase.linear});
-				}
-				if (boyfriend != null) {
-					timelessBFTintTween = flixel.tweens.FlxTween.color(boyfriend, duration, colorBF, 0xFFFFFFFF, {ease: flixel.tweens.FlxEase.linear});
-				}
-				if (gf != null) {
-					timelessGFTintTween = flixel.tweens.FlxTween.color(gf, duration, colorGF, 0xFFFFFFFF, {ease: flixel.tweens.FlxEase.linear});
-				}
-
-				timelessStageTintTween = flixel.tweens.FlxTween.num(0, 1, duration, {ease: flixel.tweens.FlxEase.linear}, function(v:Float) {
-					for (sprite in members) {
-						if (sprite != boyfriendGroup && sprite != dadGroup && sprite != gfGroup && Std.isOfType(sprite, flixel.FlxSprite)) {
-							var targetSprite:flixel.FlxSprite = cast sprite;
-							targetSprite.color = flixel.util.FlxColor.interpolate(colorStage, 0xFFFFFFFF, v);
-						}
-					}
-				});
-			}
-		} catch(e:Dynamic) {
-			catchScriptError("Chart Event failed: " + Std.string(e));
-		}
-	}
-
-	public function executeCameraFlashEvent(val1:String, val2:String):Void
-	{
-		try {
-			var flashColor:Int = 0xFFFFFFFF;
-			var duration:Float = 0.5;
-			var fadeInTime:Float = 0.0;
-			var fadeOutTime:Float = 0.5;
-			var targetObject:Int = 1;
-
-			if (val1 != null && val1.trim() != "") {
-				var split1:Array<String> = val1.split(',');
-				if (split1[0] != null) {
-					var cleanColor:String = split1[0].trim();
-					if (!cleanColor.startsWith("0x") && !cleanColor.startsWith("0X")) cleanColor = "0xFF" + cleanColor;
-					flashColor = Std.parseInt(cleanColor);
-				}
-				if (split1[1] != null) duration = Std.parseFloat(split1[1].trim());
-				if (split1[2] != null) fadeInTime = Std.parseFloat(split1[2].trim());
-			}
-
-			if (val2 != null && val2.trim() != "") {
-				var split2:Array<String> = val2.split(',');
-				if (split2[0] != null) fadeOutTime = Std.parseFloat(split2[0].trim());
-				if (split2[1] != null) targetObject = Std.parseInt(split2[1].trim());
-			}
-
-			if (Math.isNaN(duration)) duration = 0.5;
-			if (Math.isNaN(fadeInTime)) fadeInTime = 0.0;
-			if (Math.isNaN(fadeOutTime)) fadeOutTime = 0.5;
-
-			switch (targetObject)
-			{
-				case 1:
-					if (flixel.FlxG.camera != null) {
-						flixel.FlxG.camera.flash(flashColor, duration + fadeOutTime, null, true);
-					}
-
-				case 2:
-					if (boyfriend != null) {
-						if (timelessFlashBF != null) timelessFlashBF.cancel();
-						boyfriend.color = flashColor;
-						timelessFlashBF = flixel.tweens.FlxTween.color(boyfriend, fadeOutTime, flashColor, 0xFFFFFFFF, {
-							startDelay: duration,
-							ease: flixel.tweens.FlxEase.linear
-						});
-					}
-
-				case 3:
-					if (dad != null) {
-						if (timelessFlashDad != null) timelessFlashDad.cancel();
-						dad.color = flashColor;
-						timelessFlashDad = flixel.tweens.FlxTween.color(dad, fadeOutTime, flashColor, 0xFFFFFFFF, {
-							startDelay: duration,
-							ease: flixel.tweens.FlxEase.linear
-						});
-					}
-
-				case 4:
-					if (gf != null) {
-						if (timelessFlashGF != null) timelessFlashGF.cancel();
-						gf.color = flashColor;
-						timelessFlashGF = flixel.tweens.FlxTween.color(gf, fadeOutTime, flashColor, 0xFFFFFFFF, {
-							startDelay: duration,
-							ease: flixel.tweens.FlxEase.linear
-						});
-					}
-
-				case 5:
-					if (timelessFlashStage != null) timelessFlashStage.cancel();
-					for (sprite in members) {
-						if (sprite != boyfriendGroup && sprite != dadGroup && sprite != gfGroup && Std.isOfType(sprite, flixel.FlxSprite)) {
-							var targetSprite:flixel.FlxSprite = cast sprite;
-							targetSprite.color = flashColor;
-						}
-					}
-					timelessFlashStage = flixel.tweens.FlxTween.num(0, 1, fadeOutTime, {
-						startDelay: duration,
-						ease: flixel.tweens.FlxEase.linear
-					}, function(v:Float) {
-						for (sprite in members) {
-							if (sprite != boyfriendGroup && sprite != dadGroup && sprite != gfGroup && Std.isOfType(sprite, flixel.FlxSprite)) {
-								var targetSprite:flixel.FlxSprite = cast sprite;
-								targetSprite.color = flixel.util.FlxColor.interpolate(flashColor, 0xFFFFFFFF, v);
-							}
-						}
-					});
-			}
-		} catch(e:Dynamic) {
-			catchScriptError("Advanced Flash Event crashed: " + Std.string(e));
 		}
 	}
 
@@ -2444,15 +2275,6 @@ class PlayState extends MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
-		if (FlxG.keys.justPressed.TAB) {
-			timelessConsole.toggleConsoleOverlayVisibility();
-		}
-
-		if (timelessConsole.isActive) {
-			timelessConsole.updateConsoleRuntimeLogic(elapsed);
-			return;
-		}
-
 		if (timelessErrorTimer > 0) {
 			timelessErrorTimer -= elapsed;
 			if (timelessErrorTimer <= 0 && timelessErrorText != null && timelessErrorText.alpha > 0) {
@@ -3025,9 +2847,6 @@ class PlayState extends MusicBeatState
 					char.playAnim(value1, true);
 					char.specialAnim = true;
 				}
-
-			case 'Timeless Silhouette':
-				executeTimelessSilhouetteEvent(value1, value2);
 
 			case 'Camera Follow Pos':
 				if (camFollow != null)
