@@ -21,6 +21,5 @@ To compile source code easily, use our [**Compiling Pack.**](https://github.com/
 The banner background was inspired by [codename engine's](https://github.com/CodenameCrew/CodenameEngine) banner background.
 >>>>>>> 4a95954121e2ab759e14f925cce4a0168b99b990
 
-We looked at the Codename Engine and we realized that if you can do better than Psych, you can do better than what everyone now considers the best.
 
-Looking at the Codename Engine motivated us to do this project and try our best, and we'd love it if you could check out their Engine.
+Looking at the Codename Engine motivated us to do this project and try our best, and we'd love it if you could check out [their Engine](https://github.com/CodenameCrew/CodenameEngine).
