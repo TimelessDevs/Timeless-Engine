@@ -16,5 +16,10 @@ You can use our code ANYWHERE you want, but give us credits :3
 Want to stay updated with this project?
 Check out our [release page!](https://github.com/therealmerlow-hub/Timeless-Engine/releases)
 
+To compile source code easily, use our [**Compiling Pack.**](https://github.com/TimelessDevs/TE-compiling-pack/releases)
+
 The banner background was inspired by [codename engine's](https://github.com/CodenameCrew/CodenameEngine) banner background.
 >>>>>>> 4a95954121e2ab759e14f925cce4a0168b99b990
+
+
+Looking at the Codename Engine motivated us to do this project and try our best, and we'd love it if you could check out [their Engine](https://github.com/CodenameCrew/CodenameEngine).
