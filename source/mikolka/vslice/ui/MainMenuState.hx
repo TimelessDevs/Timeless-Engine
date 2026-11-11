@@ -28,11 +28,9 @@ class MainMenuState extends MusicBeatState
 	public var cheatBuffer:String = "";
 
 	#if !LEGACY_PSYCH
-	public static var psychEngineVersion:String = '0.0.5';
-	#else
-	public static var psychEngineVersion:String = '0.0.5';
+	public static var psychEngineVersion:String = '9178329.0.2783427983';
 	#end
-	public static var TimelessEngineVersion:String = '0.0.4';
+	public static var TimelessEngineVersion:String = '9178329.0.2783427983';
 	public static var funkinVersion:String = '0.7.6';
 
 	var bg:FlxSprite;
@@ -67,30 +65,18 @@ class MainMenuState extends MusicBeatState
 			}
 		}
 
-		var debugCheckText:flixel.text.FlxText = new flixel.text.FlxText(20, 20, 0, "", 24);
-		debugCheckText.setFormat(backend.Paths.font("vcr.ttf"), 24, flixel.util.FlxColor.WHITE, "left", flixel.text.FlxTextBorderStyle.OUTLINE, flixel.util.FlxColor.BLACK);
-		debugCheckText.scrollFactor.set();
-
 		if (validPath != "") {
-			debugCheckText.text = "";
-			debugCheckText.color = 0xFF00FF66;
-			add(debugCheckText);
-
 			try {
 				var content:String = sys.io.File.getContent(validPath);
 				var parsedData:MenuLayoutData = haxe.Json.parse(content);
-				
+
 				globalLayoutMatrix = parsedData;
-				
-				trace("[LAYOUT SUCCESS]: Loaded path -> " + validPath);
+
+				trace("Loaded path -> " + validPath);
 				return parsedData;
 			} catch(e:Dynamic) {
-				trace("[LAYOUT CRASH]: Path structural metadata error: " + validPath + " -> " + Std.string(e));
+				trace("Path error: " + validPath + " -> " + Std.string(e));
 			}
-		} else {
-			debugCheckText.text = "";
-			debugCheckText.color = 0xFFFF0033; // Красный
-			add(debugCheckText);
 		}
 
 		globalLayoutMatrix = null;
@@ -155,6 +141,7 @@ class MainMenuState extends MusicBeatState
 		magenta.updateHitbox();
 		magenta.screenCenter();
 		magenta.visible = false;
+		magenta.active = false;
 		magenta.color = 0xFFFD719B;
 		add(magenta);
 
@@ -179,7 +166,7 @@ class MainMenuState extends MusicBeatState
 		#end
 
 		loadTimelessMenuLayout();
-
+		
 		super.create();
 
 		#if TOUCH_CONTROLS_ALLOWED
@@ -202,31 +189,40 @@ class MainMenuState extends MusicBeatState
 		}
 	}
 
+	static var _cheatKeys:Array<{name:String, key:flixel.input.keyboard.FlxKey}> = null;
+	static function getCheatKeys():Array<{name:String, key:flixel.input.keyboard.FlxKey}>
+	{
+		if (_cheatKeys == null)
+		{
+			_cheatKeys = [];
+			for (k => v in flixel.input.keyboard.FlxKey.fromStringMap)
+			{
+				var lower:String = k.toLowerCase();
+				if (lower.length == 1)
+					_cheatKeys.push({name: lower, key: v});
+			}
+		}
+		return _cheatKeys;
+	}
+
 	override function update(elapsed:Float)
 	{
-			if (FlxG.keys.justPressed.ANY) {
-					for (key in flixel.input.keyboard.FlxKey.fromStringMap.keys()) {
-							if (FlxG.keys.checkStatus(flixel.input.keyboard.FlxKey.fromStringMap.get(key), JUST_PRESSED)) {
-									var lastKey:String = key.toLowerCase();
-									if (lastKey.length == 1) {
-											cheatBuffer += lastKey;
-							
-											if (cheatBuffer.length > 20) 
-													cheatBuffer = cheatBuffer.substring(cheatBuffer.length - 2);
-									}
-							}
-					}
+		if (FlxG.keys.justPressed.ANY)
+		{
+			for (ck in getCheatKeys())
+			{
+				if (FlxG.keys.checkStatus(ck.key, JUST_PRESSED))
+				{
+					cheatBuffer += ck.name;
+					if (cheatBuffer.length > 20)
+						cheatBuffer = cheatBuffer.substring(cheatBuffer.length - 2);
+				}
 			}
+		}
 
-			//if (FlxG.keys.justPressed.GRAVEACCENT)
-			//{
-			//	FlxG.sound.play(Paths.sound('confirmMenu'));
-			//	backend.MusicBeatState.switchState(new states.modmenu.ModMenuState());
-			//}
+		if (FlxG.sound.music != null && FlxG.sound.music.volume < 0.8)
+			FlxG.sound.music.volume += 0.5 * elapsed;
 
-			if (FlxG.sound.music.volume < 0.8)
-				FlxG.sound.music.volume += 0.5 * elapsed;
-
-			super.update(elapsed);
+		super.update(elapsed);
 	}
 }

@@ -10,6 +10,12 @@ import shaders.ColorSwap;
 
 import flixel.graphics.frames.FlxFrame;
 import flixel.input.gamepad.FlxGamepad;
+import StringTools as HaxeStringTools;
+
+import states.editors.MenuEditorState.MenuLayoutIO;
+import states.editors.MenuEditorState.MenuLayoutData;
+import states.editors.MenuEditorState.MenuItemProps;
+import states.editors.MenuEditorState.MenuFx;
 
 class TitleState extends MusicBeatState
 {
@@ -33,31 +39,18 @@ class TitleState extends MusicBeatState
 	var musicBPM:Float = 104;
 	private var sickBeats:Int = 0;
 
+	var layoutData:MenuLayoutData;
+	var layoutFromFile:Bool = false;
+	var bgSpr:FlxSprite;
+	var beatTargets:Array<{spr:FlxSprite, p:MenuItemProps, rx:Float, ry:Float, rest:String}> = [];
+	var hideTargets:Array<FlxSprite> = [];
+	var enterTargets:Array<{spr:FlxSprite, p:MenuItemProps}> = [];
+	var lockEnterPulse:Bool = false;
+
 	override public function create():Void
 	{
 		CacheSystem.clearStoredMemory();
 		super.create();
-
-		try {
-			var targetFps:Int = ClientPrefs.data.framerate; 
-			
-			if (targetFps > 0) {
-				flixel.FlxG.updateFramerate = targetFps;
-				flixel.FlxG.drawFramerate = targetFps;
-				
-				if (openfl.Lib.current != null && openfl.Lib.current.stage != null) {
-					openfl.Lib.current.stage.frameRate = targetFps;
-				}
-				
-				if (lime.app.Application.current != null && lime.app.Application.current.window != null) {
-					lime.app.Application.current.window.frameRate = targetFps;
-				}
-				
-				trace("[FPS CHANGER]: System application FPS cap forced to: " + targetFps + " Hz");
-			}
-		} catch(e:Dynamic) {
-			trace("[FPS CHANGER ERROR]: Failed to bind window refresh rate: " + e);
-		}
 		
 		CacheSystem.clearUnusedMemory();
 		startIntro();
@@ -86,15 +79,21 @@ class TitleState extends MusicBeatState
 
 
 		var cutoutSize:Float = MobileScaleMode.gameCutoutSize.x / 2.5;
+
+		loadLayout();
+		musicBPM = MenuLayoutIO.bpmOf(layoutData, musicBPM);
 		Conductor.bpm = musicBPM;
+
+		var logoProps:MenuItemProps = findItem('logo');
+		var enterProps:MenuItemProps = findItem('enter');
+		var itemScale:Float = layoutData.globalScale;
 
 		logoBl = new FlxSprite(0, 40);
 		logoBl.loadGraphic(Paths.image('titleLogo'));
 		logoBl.antialiasing = VsliceOptions.ANTIALIASING;
+		logoBl.scale.set(logoProps.scaleX * itemScale, logoProps.scaleY * itemScale);
 		logoBl.updateHitbox();
-		
-		logoBl.origin.set(logoBl.width * 0.5, logoBl.height * 0.5);
-		logoBl.screenCenter(flixel.util.FlxAxes.X);
+		logoBl.setPosition(logoProps.x, logoProps.y);
 
 		if (VsliceOptions.SHADERS)
 		{
@@ -103,7 +102,7 @@ class TitleState extends MusicBeatState
 		}
 
 		var animFrames:Array<FlxFrame> = [];
-		titleText = new FlxSprite(100 + cutoutSize, 576);
+		titleText = new FlxSprite(0, 0);
 		titleText.frames = Paths.getSparrowAtlas('titleEnter');
 		
 		@:privateAccess
@@ -112,24 +111,34 @@ class TitleState extends MusicBeatState
 			titleText.animation.findByPrefix(animFrames, "ENTER FREEZE");
 		}
 
+		var pressPrefix:String = MenuLayoutIO.hasText(enterProps.enterPrefix) ? HaxeStringTools.trim(enterProps.enterPrefix) : '';
 		if (animFrames.length > 0)
 		{
 			titleText.animation.addByPrefix('idle', "ENTER IDLE", 24);
-			titleText.animation.addByPrefix('press', VsliceOptions.FLASHBANG ? "ENTER PRESSED" : "ENTER FREEZE", 24);
+			if (pressPrefix == MenuFx.CLASSIC_PRESS)
+				titleText.animation.addByPrefix('press', VsliceOptions.FLASHBANG ? "ENTER PRESSED" : "ENTER FREEZE", 24);
+			else if (pressPrefix != '')
+				titleText.animation.addByPrefix('press', pressPrefix, 24);
 		}
 		else
 		{
 			titleText.animation.addByPrefix('idle', "Press Enter to Begin", 24);
-			titleText.animation.addByPrefix('press', "ENTER PRESSED", 24);
+			if (pressPrefix != '')
+				titleText.animation.addByPrefix('press', (pressPrefix == MenuFx.CLASSIC_PRESS) ? "ENTER PRESSED" : pressPrefix, 24);
 		}
 		titleText.animation.play('idle');
+		MenuFx.setupAnims(titleText, enterProps, 'ENTER');
+		titleText.scale.set(enterProps.scaleX * itemScale, enterProps.scaleY * itemScale);
 		titleText.updateHitbox();
+		titleText.setPosition(layoutFromFile ? enterProps.x : enterProps.x + cutoutSize, enterProps.y);
 
 		if (swagShader != null)
 			titleText.shader = swagShader.shader;
 
-		add(logoBl);
-		add(titleText);
+		logoBl.visible = logoProps.enabled != false;
+		titleText.visible = enterProps.enabled != false;
+
+		buildLayoutScene(logoProps, enterProps, itemScale);
 
 		if (initialized)	
 			skipIntro();
@@ -140,19 +149,87 @@ class TitleState extends MusicBeatState
 		}
 	}
 
+	function loadLayout()
+	{
+		layoutData = MenuLayoutIO.loadTitle();
+		layoutFromFile = (layoutData != null);
+		if (!layoutFromFile)
+			layoutData = MenuLayoutIO.makeDefaultTitle();
+	}
+
+	function findItem(name:String):MenuItemProps
+	{
+		for (it in layoutData.items)
+			if (it.name == name)
+				return it;
+		return MenuLayoutIO.makeDefaultTitle().items[name == 'logo' ? 0 : 1];
+	}
+
+	function buildLayoutScene(logoProps:MenuItemProps, enterProps:MenuItemProps, itemScale:Float)
+	{
+		if (layoutFromFile && MenuLayoutIO.hasText(layoutData.bgImage))
+		{
+			var b = new FlxSprite();
+			if (MenuFx.applyBackground(b, layoutData, false, 1.0))
+			{
+				bgSpr = b;
+				bgSpr.alpha = layoutData.backgroundAlpha;
+				bgSpr.scrollFactor.set();
+				add(bgSpr);
+			}
+			else
+				b.destroy();
+		}
+
+		var front:Array<FlxSprite> = [];
+		for (p in layoutData.decor)
+		{
+			var spr = MenuFx.makeDecor(p);
+			MenuFx.place(spr, p);
+			if (p.front)
+				front.push(spr);
+			else
+				add(spr);
+			if (p.beatAnim != 'none')
+				beatTargets.push({spr: spr, p: p, rx: p.scaleX, ry: p.scaleY, rest: 'main'});
+			if (p.hideOnEnter)
+				hideTargets.push(spr);
+			else if (MenuLayoutIO.hasText(p.enterPrefix))
+				enterTargets.push({spr: spr, p: p});
+		}
+
+		var added:Array<FlxSprite> = [];
+		for (it in layoutData.items)
+		{
+			var s:FlxSprite = (it.name == 'logo') ? logoBl : ((it.name == 'enter') ? titleText : null);
+			if (s != null && added.indexOf(s) < 0)
+			{
+				add(s);
+				added.push(s);
+			}
+		}
+		for (s in [logoBl, titleText])
+			if (added.indexOf(s) < 0)
+				add(s);
+		for (s in front)
+			add(s);
+
+		for (pair in [{spr: logoBl, p: logoProps, rest: ''}, {spr: titleText, p: enterProps, rest: 'idle'}])
+		{
+			if (pair.p.enabled == false)
+				continue;
+			if (pair.p.beatAnim != 'none')
+				beatTargets.push({spr: pair.spr, p: pair.p, rx: pair.p.scaleX * itemScale, ry: pair.p.scaleY * itemScale, rest: pair.rest});
+			if (pair.p.hideOnEnter)
+				hideTargets.push(pair.spr);
+		}
+		lockEnterPulse = enterProps.hideOnEnter;
+	}
+
 	override function update(elapsed:Float)
 	{
 		if (FlxG.sound.music != null)
 			Conductor.songPosition = FlxG.sound.music.time;
-
-		if (logoBl != null && !transitioning) {
-			var snapSpeed:Float = FlxMath.bound(elapsed * 15.0, 0, 1);
-			var snapAngleSpeed:Float = FlxMath.bound(elapsed * 10.0, 0, 1);
-
-			logoBl.scale.x += (1.0 - logoBl.scale.x) * snapSpeed;
-			logoBl.scale.y += (1.0 - logoBl.scale.y) * snapSpeed;
-			logoBl.angle += (0.0 - logoBl.angle) * snapAngleSpeed;
-		}
 
 		var pressedEnter:Bool = FlxG.keys.justPressed.ENTER || controls.ACCEPT || (TouchUtil.justReleased && !SwipeUtil.swipeAny);
 		var gamepad:FlxGamepad = FlxG.gamepads.lastActive;
@@ -167,7 +244,7 @@ class TitleState extends MusicBeatState
 			enterTimer = null;
 		}
 
-		if (!pressedEnter)
+		if (!pressedEnter && !(transitioning && lockEnterPulse))
 		{
 			titleTimer += FlxMath.bound(elapsed, 0, 1);
 			if (titleTimer > 2) titleTimer -= 2;
@@ -182,7 +259,8 @@ class TitleState extends MusicBeatState
 		{
 			titleText.color = FlxColor.WHITE;
 			titleText.alpha = 1;
-			titleText.animation.play('press');
+			if (titleText.animation.exists('press'))
+				titleText.animation.play('press');
 
 			FlxG.camera.flash(VsliceOptions.FLASHBANG ? FlxColor.WHITE : 0x4CFFFFFF, 1);
 			FlxG.sound.play(Paths.sound('confirmMenu'), 0.7);
@@ -207,7 +285,16 @@ class TitleState extends MusicBeatState
 				if (titleMenuMusic.playing) titleMenuMusic.stop();
 			}
 
+			for (h in hideTargets)
+				MenuFx.hide(h);
+			if (bgSpr != null && layoutData.bgSparrow == true && MenuLayoutIO.hasText(layoutData.bgEnter))
+				MenuFx.playOnce(bgSpr, 'enter', '');
+			for (e in enterTargets)
+				MenuFx.playEnterAnim(e.spr, e.p);
+
 			if (logoBl != null) {
+				flixel.tweens.FlxTween.cancelTweensOf(logoBl);
+				flixel.tweens.FlxTween.cancelTweensOf(logoBl.scale);
 				var randomExitTilt:Float = FlxG.random.float(25, 25) * FlxG.random.sign();
 
 				flixel.tweens.FlxTween.tween(logoBl, {y: logoBl.y - 110, angle: logoBl.angle + (randomExitTilt * 0.3)}, 0.18, {
@@ -245,13 +332,11 @@ class TitleState extends MusicBeatState
 
 		super.beatHit();
 
-		if (logoBl != null) {
-			logoBl.scale.set(0.9, 0.9);
-			danceLeft = !danceLeft;
-			
-			var randomBaseAngle:Float = FlxG.random.float(7.5, 11.5);
-			logoBl.angle = danceLeft ? -randomBaseAngle : randomBaseAngle;
-		}
+		if (layoutFromFile && layoutData.bgSparrow == true && MenuLayoutIO.hasText(layoutData.bgBeat) && (!transitioning || !MenuLayoutIO.hasText(layoutData.bgEnter)))
+			MenuFx.playOnce(bgSpr, 'beat', 'main');
+		for (t in beatTargets)
+			if (!transitioning || (t.p.beatAnim == 'sparrow' && !MenuLayoutIO.hasText(t.p.enterPrefix) && t.spr != logoBl))
+				MenuFx.beat(t.spr, t.p, t.rx, t.ry, curBeat, t.rest);
 
 		if (!closedState)
 		{

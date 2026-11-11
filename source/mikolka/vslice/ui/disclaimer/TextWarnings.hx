@@ -6,13 +6,22 @@ class OutdatedState extends WarningState
 {
 	public function new(newVersion:String, nextState:FlxState)
 	{
-		final bro:String = #if mobile 'kiddo' #else 'bro' #end;
+		final bro:String = #if ios
+			'rich guy'
+		#elseif mobile
+			'kiddo'
+		#elseif linux
+			(flixel.FlxG.random.bool(90) ? 'homie' : 'femboy')
+		#else
+			'bro'
+		#end;
+
 		final escape:String = (controls.mobileC) ? 'B' : 'ESCAPE';
 
 		var guh = "Hi " + bro + ", looks like you're running an\noutdated version of Timeless Engine (" + MainMenuState.TimelessEngineVersion + "),\nplease update to " + newVersion + "!\nPress " + escape + " to proceed anyway.\n\nThank you for using the Engine!";
 		
 		super(guh, () -> {
-			CoolUtil.browserLoad("https://github.com/timelessdevs/timeless-engine");
+			CoolUtil.browserLoad("https://github.com/TimelessDevs/Timeless-Engine/blob/main/source/backend/version.txt");
 			if (onExit != null) onExit();
 		}, onExit, nextState);
 	}
@@ -25,7 +34,7 @@ class FlashingState extends WarningState
 		final enter:String = controls.mobileC ? 'A' : 'ENTER';
 		final escape:String = controls.mobileC ? 'B' : 'ESCAPE';
 		
-		var text = "Hey, watch out!\nThis Mod contains some flashing lights!\nPress " + escape + " to disable them now or go to Options Menu.\nPress " + enter + " to ignore this message.\nYou've been warned!";
+		var text = "Hey, watch out!\nThis Game contains some flashing lights!\nPress " + escape + " to disable them now or go to Options Menu.\nPress " + enter + " to ignore this message.\nYou've been warned!";
 		
 		super(text, () -> {
 			#if LEGACY_PSYCH

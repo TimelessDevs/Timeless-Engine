@@ -25,6 +25,7 @@ class Mods
 		'shaders',
 		'videos',
 		'images',
+		'previews',
 		'stages',
 		'weeks',
 		'fonts',

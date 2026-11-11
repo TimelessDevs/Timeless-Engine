@@ -360,12 +360,17 @@ class Main extends Sprite
 		});
 
 		try {
-			var refreshRate:Int = ClientPrefs.data.framerate;
-			if (refreshRate > 0) {
-				FlxG.updateFramerate = refreshRate;
-				FlxG.drawFramerate = refreshRate;
+			var targetFps:Int = ClientPrefs.data?.framerate ?? 60;
+			
+			if (targetFps > 0) {
+				flixel.FlxG.updateFramerate = flixel.FlxG.drawFramerate = targetFps;
+				if (openfl.Lib.current?.stage != null) openfl.Lib.current.stage.frameRate = targetFps;
+				if (lime.app.Application.current?.window != null) lime.app.Application.current.window.frameRate = targetFps;
+				trace("System application FPS cap forced to: " + targetFps + " Hz");
 			}
-		} catch(e:Dynamic) {}
+		} catch(e:Dynamic) {
+			trace("Main FPS initialization error: " + e);
+		}
 	}
 
 	static function resetSpriteCache(sprite:Sprite):Void

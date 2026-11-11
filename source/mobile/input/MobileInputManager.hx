@@ -7,6 +7,8 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 {
 	public var trackedButtons:Map<MobileInputID, TouchButton> = new Map<MobileInputID, TouchButton>();
 
+	var _uniqueButtons:Array<TouchButton> = [];
+
 	public function new()
 	{
 		super();
@@ -94,8 +96,8 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 		switch (button)
 		{
 			case MobileInputID.ANY:
-				for (id in trackedButtons.keys())
-					if (checkStatusUnsafe(id, state)) return true;
+				for (btn in _uniqueButtons)
+					if (btn != null && statusOf(btn, state)) return true;
 			case MobileInputID.NONE:
 				return false;
 			default:
@@ -113,10 +115,8 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 		return false;
 	}
 
-	function checkStatusUnsafe(button:MobileInputID, state:ButtonsStates = JUST_PRESSED):Bool
+	inline function statusOf(btn:TouchButton, state:ButtonsStates):Bool
 	{
-		var btn = trackedButtons.get(button);
-		if (btn == null) return false;
 		return switch (state)
 		{
 			case RELEASED: btn.released;
@@ -126,18 +126,32 @@ class MobileInputManager extends FlxTypedSpriteGroup<TouchButton>
 		}
 	}
 
+	function checkStatusUnsafe(button:MobileInputID, state:ButtonsStates = JUST_PRESSED):Bool
+	{
+		var btn = trackedButtons.get(button);
+		if (btn == null) return false;
+		return statusOf(btn, state);
+	}
+
 	public function updateTrackedButtons()
 	{
 		trackedButtons.clear();
+		_uniqueButtons.resize(0);
 		forEachExists(function(button:TouchButton)
 		{
 			if (button.IDs != null)
 			{
+				var added:Bool = false;
 				for (id in button.IDs)
 				{
 					if (!trackedButtons.exists(id))
+					{
 						trackedButtons.set(id, button);
+						added = true;
+					}
 				}
+				if (added)
+					_uniqueButtons.push(button);
 			}
 		});
 	}

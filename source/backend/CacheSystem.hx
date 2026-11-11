@@ -18,6 +18,7 @@ typedef ImageLine =
 
 @:access(openfl.display.BitmapData)
 @:access(flixel.system.frontEnds.BitmapFrontEnd._cache)
+@:access(openfl.media.Sound)
 class CacheSystem
 {
 	public static var currentTrackedAssets:Map<String, FlxGraphic> = new Map<String, FlxGraphic>();
@@ -359,36 +360,29 @@ class CacheSystem
 			return _pathCache.get(cacheKey);
 		}
 
-		function astcGetSharedPath(path:String) {
+		function resolveExt(build:String->String):String {
 			#if ATSC_SUPPORT
 			if (backend.Native.isASTCSupported()) {
-				var assetPath = Paths.getSharedPath('$path.astc');
+				var assetPath = build('astc');
 				if (mikolka.funkin.custom.NativeFileSystem.exists(assetPath)) return assetPath;
 			}
 			#end
-			return Paths.getSharedPath('$path.png');
+			for (ext in Paths.IMAGE_EXTS) {
+				var assetPath = build(ext);
+				if (mikolka.funkin.custom.NativeFileSystem.exists(assetPath)) return assetPath;
+			}
+			return build(Paths.IMAGE_EXT);
 		}
 
-		function astcGetFolderPath(f:String, folder:String) {
-			#if ATSC_SUPPORT
-			if (backend.Native.isASTCSupported()) {
-				var assetPath = Paths.getFolderPath('$f.astc', folder);
-				if (mikolka.funkin.custom.NativeFileSystem.exists(assetPath)) return assetPath;
-			}
-			#end
-			return Paths.getFolderPath('$f.png', folder);
-		}
+		function astcGetSharedPath(path:String)
+			return resolveExt(ext -> Paths.getSharedPath('$path.$ext'));
+
+		function astcGetFolderPath(f:String, folder:String)
+			return resolveExt(ext -> Paths.getFolderPath('$f.$ext', folder));
 
 		#if MODS_ALLOWED
-		function astcModFolders(path:String) {
-			#if ATSC_SUPPORT
-			if (backend.Native.isASTCSupported()) {
-				var assetPath = Paths.modFolders('$path.astc');
-				if (mikolka.funkin.custom.NativeFileSystem.exists(assetPath)) return assetPath;
-			}
-			#end
-			return Paths.modFolders('$path.png');
-		}
+		function astcModFolders(path:String)
+			return resolveExt(ext -> Paths.modFolders('$path.$ext'));
 
 		var customFile:String = (parentfolder != null) ? '$parentfolder/$file' : file;
 

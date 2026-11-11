@@ -4,11 +4,6 @@ package mobile.input;
 
 import flixel.system.macros.FlxMacroUtil;
 
-/**
- * A high-level list of unique values for mobile input buttons.
- * Maps enum values and strings to unique integer codes
- * @author Karim Akra
- */
 @:runtimeValue
 enum abstract MobileInputID(Int) from Int to Int
 {
@@ -67,11 +62,20 @@ enum abstract MobileInputID(Int) from Int to Int
 	var EXTRA_1 = 42;
 	var EXTRA_2 = 43;
 
+	/** raw string -> id cache: Lua polls these names every frame, and toUpperCase() allocates a new string each time */
+	public static var parseCache(default, null):Map<String, MobileInputID> = new Map<String, MobileInputID>();
+
 	@:from
-	public static inline function fromString(s:String)
+	public static function fromString(s:String):MobileInputID
 	{
-		s = s.toUpperCase();
-		return fromStringMap.exists(s) ? fromStringMap.get(s) : NONE;
+		if (s == null) return NONE;
+		var cached:Null<MobileInputID> = parseCache.get(s);
+		if (cached != null) return cached;
+
+		var up:String = s.toUpperCase();
+		var id:MobileInputID = fromStringMap.exists(up) ? fromStringMap.get(up) : NONE;
+		parseCache.set(s, id);
+		return id;
 	}
 
 	@:to

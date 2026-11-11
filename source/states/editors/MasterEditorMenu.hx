@@ -116,7 +116,11 @@ class MasterEditorMenu extends MusicBeatState
 				case 'Main Menu Editor':
 					MusicBeatState.switchState(new MenuEditorState());
 				case 'Shader Editor':
+					#if mobile
+					MusicBeatState.switchState(new mobile.states.MobileShaderEditorState());
+					#else
 					MusicBeatState.switchState(new ShaderEditorState());
+					#end
 				case 'Menu Character Editor':
 					MusicBeatState.switchState(new MenuCharacterEditorState());
 				case 'Dialogue Editor':

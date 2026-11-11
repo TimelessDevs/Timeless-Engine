@@ -17,6 +17,9 @@ import states.InitState;
 	#if android
 	public var storageType:String = "EXTERNAL";
 	#end
+
+	public var modPreviews:Bool = true;
+
 	public var hitboxType:String = "Gradient";
 	public var popUpRating:Bool = true;
 	public var vsync:Bool = false;

@@ -354,8 +354,7 @@ class FreeplayState extends MusicBeatSubstate
 		}
 
 		#if discord_rpc
-		// Updating Discord Rich Presence
-		DiscordClient.changePresence('In the Menus', null);
+		DiscordClient.changePresence('In Freeplay', null);
 		#end
 
 		var isDebug:Bool = false;
@@ -730,6 +729,7 @@ class FreeplayState extends MusicBeatSubstate
 				ostName.visible = true;
 				fp.visible = true;
 				fp.updateScore(0);
+				_lastScoreInt = -1; // force the next lerp tick to re-apply the real score
 
 				clearBoxSprite.visible = true;
 				txtCompletion.visible = true;
@@ -1651,8 +1651,10 @@ class FreeplayState extends MusicBeatSubstate
 
 		handleInputs(elapsed);
 
-		if (dj != null)
+		#if FLX_DEBUG
+		if (dj != null && FlxG.debugger.visible)
 			FlxG.watch.addQuick('dj-anim', dj.getCurrentAnimation());
+		#end
 	}
 
 	function lerpScoreDisplays(elapsed:Float):Void
@@ -1670,21 +1672,32 @@ class FreeplayState extends MusicBeatSubstate
 			lerpCompletion = intendedCompletion;
 		}
 
-		fp.updateScore(Std.int(lerpScore));
-
-		txtCompletion.text = '${Math.floor(lerpCompletion * 100)}';
-
-		// Right align the completion percentage
-		switch (txtCompletion.text.length)
+		// only touch the digit sprites / atlas text when the displayed numbers actually change
+		var scoreInt:Int = Std.int(lerpScore);
+		if (scoreInt != _lastScoreInt)
 		{
-			case 3:
-				txtCompletion.offset.x = 10;
-			case 2:
-				txtCompletion.offset.x = 0;
-			case 1:
-				txtCompletion.offset.x = -24;
-			default:
-				txtCompletion.offset.x = 0;
+			_lastScoreInt = scoreInt;
+			fp.updateScore(scoreInt);
+		}
+
+		var complInt:Int = Math.floor(lerpCompletion * 100);
+		if (complInt != _lastCompletionInt)
+		{
+			_lastCompletionInt = complInt;
+			txtCompletion.text = '$complInt';
+
+			// Right align the completion percentage
+			switch (txtCompletion.text.length)
+			{
+				case 3:
+					txtCompletion.offset.x = 10;
+				case 2:
+					txtCompletion.offset.x = 0;
+				case 1:
+					txtCompletion.offset.x = -24;
+				default:
+					txtCompletion.offset.x = 0;
+			}
 		}
 	} 
 	function handleInputs(elapsed:Float):Void
@@ -2334,7 +2347,9 @@ class FreeplayState extends MusicBeatSubstate
 				FreeplayHelpers.loadDiffsFromWeek(daSongCapsule.songData);
 
 			FlxG.sound.music.pause(); // muting previous track must be done NOW
-			FlxTimer.wait(FADE_IN_DELAY, playCurSongPreview.bind(daSongCapsule)); // Wait a little before trying to pull a Inst file
+			// only the last scroll position may start a preview (older timers were no-ops anyway, but cost a timer each)
+			if (_previewTimer != null) _previewTimer.cancel();
+			_previewTimer = FlxTimer.wait(FADE_IN_DELAY, playCurSongPreview.bind(daSongCapsule)); // Wait a little before trying to pull a Inst file
 
 			tweenCurSongColor(daSongCapsule);
 			curCapsule.selected = true;
@@ -2342,6 +2357,10 @@ class FreeplayState extends MusicBeatSubstate
 		else if (prepForNewRank)
 			tweenCurSongColor(daSongCapsule);
 	}
+
+	var _previewTimer:FlxTimer = null;
+	var _lastScoreInt:Int = -1;
+	var _lastCompletionInt:Int = -1;
 
 	public function playCurSongPreview(?daSongCapsule:SongMenuItem):Void
 	{

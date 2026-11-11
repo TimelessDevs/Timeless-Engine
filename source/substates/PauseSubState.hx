@@ -25,7 +25,7 @@ class PauseSubState extends MusicBeatSubstate
 		#if TOUCH_CONTROLS_ALLOWED 'Chart Editor', #end
 		'Change Difficulty',
 		'Options',
-		'Close the game',
+		'Close The Game',
 		'Exit to menu'
 	];
 	var difficultyChoices = [];
@@ -72,7 +72,7 @@ class PauseSubState extends MusicBeatSubstate
 	{
 		controls.isInSubstate = true;
 		if (Difficulty.list.length < 2)
-			menuItemsOG.remove('Change Difficulty'); // No need to change difficulty if there is only one!
+			menuItemsOG.remove('Change Difficulty');
 
 		if (PlayState.chartingMode)
 		{
@@ -90,13 +90,6 @@ class PauseSubState extends MusicBeatSubstate
 		}
 		else if (PlayState.instance.practiceMode && !PlayState.instance.startingSong)
 			menuItemsOG.insert(3, 'Skip Time');
-
-		#if mobile
-		if (!menuItemsOG.contains('Console')) {
-			menuItemsOG.insert(menuItemsOG.length - 1, 'Console');
-		}
-		#end
-
 		if (inVid)
 		{
 			menuItems = ['Resume', cutscene_resetTxt, cutscene_skipTxt, 'Options', 'Exit to menu'];
@@ -125,7 +118,8 @@ class PauseSubState extends MusicBeatSubstate
 			trace("No pause music!");
 		}
 		pauseMusic.volume = 0;
-		pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
+		if (pauseMusic.length > 0)
+			pauseMusic.play(false, FlxG.random.int(0, Std.int(pauseMusic.length / 2)));
 
 		FlxG.sound.list.add(pauseMusic);
 
@@ -177,6 +171,7 @@ class PauseSubState extends MusicBeatSubstate
 		blueballedTxt.alpha = 0;
 		levelDifficulty.alpha = 0;
 		levelInfo.alpha = 0;
+		bg.active = levelInfo.active = levelDifficulty.active = blueballedTxt.active = practiceText.active = chartingText.active = false;
 
 		levelInfo.x = FlxG.width - (levelInfo.width + 20);
 		levelDifficulty.x = FlxG.width - (levelDifficulty.width + 20);
@@ -201,6 +196,7 @@ class PauseSubState extends MusicBeatSubstate
 		missingText.setFormat(Paths.font("vcr.ttf"), 24, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 		missingText.scrollFactor.set();
 		missingText.visible = false;
+		missingText.active = missingTextBG.active = false;
 		add(missingText);
 
 		regenMenu();
@@ -316,7 +312,7 @@ class PauseSubState extends MusicBeatSubstate
 		}
 
 		#if TOUCH_CONTROLS_ALLOWED
-		if (touchPad == null) // sometimes it dosent add the tpad, hopefully this fixes it
+		if (touchPad == null)
 		{
 			addTouchPad(PlayState.chartingMode ? 'LEFT_FULL' : 'UP_DOWN', 'A');
 			addTouchPadCamera();
@@ -335,11 +331,11 @@ class PauseSubState extends MusicBeatSubstate
 				if(useErect){
 					var curDiffText = selectedOption;
 					if(songLowercase.endsWith("-erect") && curDiffText != "Erect" && curDiffText != "Nightmare"){
-						//not nightmare anymore
+
 						songLowercase = songLowercase.substring(0,songLowercase.length-"-erect".length);
 					}
 					else if(!songLowercase.endsWith("-erect") && (curDiffText == "Erect" || curDiffText == "Nightmare")){
-						//now it's nightmare
+
 						songLowercase = songLowercase+"-erect";
 					}
 				}
@@ -363,7 +359,7 @@ class PauseSubState extends MusicBeatSubstate
 
 					var errorStr:String = e.message;
 					if (errorStr.startsWith('[lime.utils.Assets] ERROR:'))
-						errorStr = 'Missing file: ' + errorStr.substring(errorStr.indexOf(songLowercase), errorStr.length - 1); // Missing chart
+						errorStr = 'Missing file: ' + errorStr.substring(errorStr.indexOf(songLowercase), errorStr.length - 1);
 					else
 						errorStr += '\n\n' + e.stack;
 
@@ -383,7 +379,6 @@ class PauseSubState extends MusicBeatSubstate
 			switch (selectedOption)
 			{
 				case "Resume":
-					CacheSystem.clearUnusedMemory();
 					specialAction = RESUME;
 					close();
 				case 'Change Difficulty':
@@ -428,29 +423,26 @@ class PauseSubState extends MusicBeatSubstate
 					PlayState.instance.botplayTxt.alpha = 1;
 					PlayState.instance.botplaySine = 0;
 				case 'Options':
-					try {
-						PlayState.instance.paused = true;
-						PlayState.instance.vocals.volume = 0;
-						PlayState.instance.canResync = false;
-						
-						backend.MusicBeatState.switchState(new options.OptionsState());
-						options.OptionsState.onPlayState = true;
-						trace("[PROGRESS LOCKED]: Switched to standard OptionsState with onPlayState flag.");
-					} catch(e:Dynamic) {
-						backend.MusicBeatState.switchState(cast Type.createInstance(Type.resolveClass("options.OptionsState"), []));
+					PlayState.instance.paused = true; // For lua
+					PlayState.instance.vocals.volume = 0;
+					PlayState.instance.canResync = false;
+					MusicBeatState.switchState(new OptionsState());
+					if (ClientPrefs.data.pauseMusic != 'None')
+					{
+						FlxG.sound.playMusic(Paths.music(Paths.formatToSongPath(ClientPrefs.data.pauseMusic)), pauseMusic.volume);
+						FlxTween.tween(FlxG.sound.music, {volume: 1}, 0.8);
+						FlxG.sound.music.time = pauseMusic.time;
 					}
-
-				case 'Close the game':
+					OptionsState.onPlayState = true;
+				case 'Close The Game', 'Close the Game':
 					Sys.exit(0);
-
 				case "Exit to menu":
 					#if DISCORD_ALLOWED DiscordClient.resetClientID(); #end
 					PlayState.deathCounter = 0;
 					PlayState.seenCutscene = false;
 
 					PlayState.instance.canResync = false;
-					// ! not yet
-					// Mods.loadTopMod();
+
 					if (PlayState.isStoryMode)
 					{
 						PlayState.storyPlaylist = [];
@@ -497,7 +489,7 @@ class PauseSubState extends MusicBeatSubstate
 
 	public static function restartSong(noTrans:Bool = false)
 	{
-		PlayState.instance.paused = true; // For lua
+		PlayState.instance.paused = true;
 		FlxG.sound.music.volume = 0;
 		PlayState.instance.vocals.volume = 0;
 
@@ -512,6 +504,7 @@ class PauseSubState extends MusicBeatSubstate
 	override function destroy()
 	{
 		controls.isInSubstate = false;
+		FlxG.sound.list.remove(pauseMusic, true);
 		pauseMusic.destroy();
 		super.destroy();
 	}
@@ -571,6 +564,7 @@ class PauseSubState extends MusicBeatSubstate
 				skipTimeText.setFormat(Paths.font("vcr.ttf"), 64, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
 				skipTimeText.scrollFactor.set();
 				skipTimeText.borderSize = 2;
+				_lastSkipSec = _lastTotalSec = -1;
 				skipTimeTracker = item;
 				add(skipTimeText);
 
@@ -592,10 +586,21 @@ class PauseSubState extends MusicBeatSubstate
 		skipTimeText.visible = (skipTimeTracker.alpha >= 1);
 	}
 
+	var _lastSkipSec:Float = -1;
+	var _lastTotalSec:Float = -1;
+
 	function updateSkipTimeText()
-		skipTimeText.text = FlxStringUtil.formatTime(Math.max(0, Math.floor(curTime / 1000)), false)
-			+ ' / '
-			+ FlxStringUtil.formatTime(Math.max(0, Math.floor(FlxG.sound.music.length / 1000)), false);
+	{
+		if (skipTimeText == null)
+			return;
+		var cur:Float = Math.max(0, Math.floor(curTime / 1000));
+		var total:Float = Math.max(0, Math.floor(FlxG.sound.music.length / 1000));
+		if (cur == _lastSkipSec && total == _lastTotalSec)
+			return;
+		_lastSkipSec = cur;
+		_lastTotalSec = total;
+		skipTimeText.text = FlxStringUtil.formatTime(cur, false) + ' / ' + FlxStringUtil.formatTime(total, false);
+	}
 }
 
 enum PauseSpecialAction

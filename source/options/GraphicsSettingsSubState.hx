@@ -86,15 +86,11 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 
 	function onChangeFramerate()
 	{
-		if(ClientPrefs.data.framerate > FlxG.drawFramerate)
-		{
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
-		}
-		else
-		{
-			FlxG.drawFramerate = ClientPrefs.data.framerate;
-			FlxG.updateFramerate = ClientPrefs.data.framerate;
+		var targetFps:Int = ClientPrefs.data?.framerate ?? 60;
+		if (targetFps > 0) {
+			flixel.FlxG.updateFramerate = flixel.FlxG.drawFramerate = targetFps;
+			if (openfl.Lib.current?.stage != null) openfl.Lib.current.stage.frameRate = targetFps;
+			if (lime.app.Application.current?.window != null) lime.app.Application.current.window.frameRate = targetFps;
 		}
 	}
 

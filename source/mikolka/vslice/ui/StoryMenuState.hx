@@ -53,6 +53,11 @@ class StoryMenuState extends MusicBeatState
 	var selectedWeek:Bool = false;
 	var stopspamming:Bool = false;
 
+	var _locksDirty:Bool = true;
+	var _rightHeld:Null<Bool> = null;
+	var _leftHeld:Null<Bool> = null;
+	var _xmlExistsCache:Map<String, Bool> = new Map<String, Bool>();
+
 	public function new(?stickers:StickerSubState = null)
 	{
 		super();
@@ -291,8 +296,17 @@ class StoryMenuState extends MusicBeatState
 			}
 			#end
 
-			rightArrow.animation.play(holdingUiRight ? 'press' : 'idle');
-			leftArrow.animation.play(holdingUiLeft ? 'press' : 'idle');
+			// only touch the animation controller when the arrow state really changes
+			if (_rightHeld != holdingUiRight)
+			{
+				_rightHeld = holdingUiRight;
+				rightArrow.animation.play(holdingUiRight ? 'press' : 'idle');
+			}
+			if (_leftHeld != holdingUiLeft)
+			{
+				_leftHeld = holdingUiLeft;
+				leftArrow.animation.play(holdingUiLeft ? 'press' : 'idle');
+			}
 
 			if (pressedUiRight) changeDifficulty(1);
 			else if (pressedUiLeft) changeDifficulty(-1);
@@ -336,13 +350,28 @@ class StoryMenuState extends MusicBeatState
 		}
 
 		var currentExpLerp:Float = Math.exp(-elapsed * 10.2);
+		var anyMoving:Bool = false;
 		for (item in grpWeekText.members)
-			item.y = FlxMath.lerp(item.targetY - offY + 480, item.y, currentExpLerp);
-
-		for (lock in grpLocks.members)
 		{
-			var currentBoundItem = grpWeekText.members[lock.ID];
-			lock.y = currentBoundItem.y + (currentBoundItem.height - lock.height) / 2;
+			var target:Float = item.targetY - offY + 480;
+			var ny:Float = FlxMath.lerp(target, item.y, currentExpLerp);
+			if (Math.abs(ny - target) < 0.01) ny = target; // settled: stop recomputing forever
+			if (ny != item.y)
+			{
+				item.y = ny;
+				anyMoving = true;
+			}
+		}
+
+		// locks only follow their week while it moves
+		if (anyMoving || _locksDirty)
+		{
+			_locksDirty = false;
+			for (lock in grpLocks.members)
+			{
+				var currentBoundItem = grpWeekText.members[lock.ID];
+				lock.y = currentBoundItem.y + (currentBoundItem.height - lock.height) / 2;
+			}
 		}
 	}
 
@@ -381,7 +410,16 @@ class StoryMenuState extends MusicBeatState
 		ModsHelper.setDirectoryFromWeek(loadedWeeks[curWeek]);
 		var diff:String = StoryModeHooks.getDifficultyString(curDifficulty);
 
-		if (Paths.fileExists('images/menudifficulties/' + Paths.formatToSongPath(diff) + ".xml", BINARY))
+		var diffPath:String = Paths.formatToSongPath(diff);
+		var xmlKey:String = backend.Mods.currentModDirectory + '|' + diffPath;
+		var hasXml:Null<Bool> = _xmlExistsCache.get(xmlKey);
+		if (hasXml == null)
+		{
+			// disk lookup only once per mod/difficulty
+			hasXml = Paths.fileExists('images/menudifficulties/' + diffPath + ".xml", BINARY);
+			_xmlExistsCache.set(xmlKey, hasXml);
+		}
+		if (hasXml)
 		{
 			var newFrames = Paths.getSparrowAtlas('menudifficulties/' + Paths.formatToSongPath(diff));
 			sprDifficulty.frames = newFrames;
@@ -442,7 +480,8 @@ class StoryMenuState extends MusicBeatState
 		else
 		{
 			bgSprite.visible = true;
-			bgSprite.loadGraphic(Paths.image('menubackgrounds/menu_' + assetName));
+			var bgGraphic:FlxGraphic = Paths.image('menubackgrounds/menu_' + assetName);
+			if (bgSprite.graphic != bgGraphic) bgSprite.loadGraphic(bgGraphic); // same background = nothing to reload
 			if (MobileScaleMode.enabled) bgSprite.screenCenter(X);
 		}
 		PlayState.storyWeek = curWeek;

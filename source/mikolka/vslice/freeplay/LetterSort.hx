@@ -107,49 +107,40 @@ class LetterSort extends FlxTypedSpriteGroup<FlxSprite>
    * Separated out so we can call it again on letters with songs within them
    * @param diff
    */
+  var _stepTimers:Array<FlxTimer> = [null, null, null];
+
   function doLetterChangeAnims(diff:Int):Void
   {
-    var ezTimer:Int->FlxSprite->Float->Void = function(frameNum:Int, spr:FlxSprite, offsetNum:Float) {
-      new FlxTimer().start(frameNum / 24, function(_) {
-        spr.offset.x = offsetNum;
-      });
-    };
-
     var positions:Array<Float> = [-10, -22, 2, 0];
 
     // if we're moving left, we want to move the positions the same amount, but negative direciton
     var multiPosOrNeg:Float = diff > 0 ? 1 : -1;
 
+    // frame 0 is applied immediately
     for (sep in grpSeperators)
-    {
-      ezTimer(0, sep, positions[0] * multiPosOrNeg);
-      ezTimer(1, sep, positions[1] * multiPosOrNeg);
-      ezTimer(2, sep, positions[2] * multiPosOrNeg);
-      ezTimer(3, sep, positions[3] * multiPosOrNeg);
-    }
-
-    for (index => letter in letters)
-    {
+      sep.offset.x = positions[0] * multiPosOrNeg;
+    for (letter in letters)
       letter.offset.x = positions[0] * multiPosOrNeg;
 
-      new FlxTimer().start(1 / 24, function(_) {
-        letter.offset.x = positions[1] * multiPosOrNeg;
-        if (index == 0) letter.visible = false;
+    // frames 1..3: one timer per frame step for ALL sprites (was ~35 timers + closures per press);
+    // a new press cancels the previous steps so stale offsets can't overwrite the new ones
+    for (step in 1...4)
+    {
+      var old:FlxTimer = _stepTimers[step - 1];
+      if (old != null) old.cancel();
+      _stepTimers[step - 1] = new FlxTimer().start(step / 24, function(_) {
+        var pos:Float = positions[step] * multiPosOrNeg;
+        for (sep in grpSeperators)
+          sep.offset.x = pos;
+        for (index => letter in letters)
+        {
+          if (step == 3 && index == 2) letter.offset.x = 0;
+          else letter.offset.x = pos;
+
+          if (step == 1 && index == 0) letter.visible = false;
+          else if (step == 2 && index == 0) letter.visible = true;
+        }
       });
-
-      new FlxTimer().start(2 / 24, function(_) {
-        letter.offset.x = positions[2] * multiPosOrNeg;
-        if (index == 0.) letter.visible = true;
-      });
-
-      if (index == 2)
-      {
-        ezTimer(3, letter, 0);
-        // letter.offset.x = 0;
-        continue;
-      }
-
-      ezTimer(3, letter, positions[3] * multiPosOrNeg);
     }
 
     curSelection += diff;
@@ -163,46 +154,22 @@ class LetterSort extends FlxTypedSpriteGroup<FlxSprite>
   }
 }
 
-/**
- * The actual FlxAtlasSprite for the letters, with their animation code stuff and regex stuff
- */
 class FreeplayLetter extends FlxAtlasSprite
 {
-  /**
-   * A preformatted array of letter strings, for use when doing regex
-   * ex: ['A-B', 'C-D', 'E-H', 'I-L' ...]
-   */
   public var regexLetters:Array<String> = [];
-
-  /**
-   * A preformatted array of the letters, for use when accessing symbol animation info
-   * ex: ['AB', 'CD', 'EH', 'IL' ...]
-   */
   public var animLetters:Array<String> = [];
-
-  /**
-   * The current letter in the regexLetters array this FreeplayLetter is on
-   */
   public var curLetter:Int = 0;
 
   public function new(x:Float, y:Float, ?letterInd:Int)
   {
     super(x, y, "freeplay/sortedLetters");
 
-    // this is used for the regex
-    // /^[OR].*/gi doesn't work for showing the song Pico, so now it's
-    // /^[O-R].*/gi ant it works for displaying Pico
-    // https://regex101.com/r/bWFPfS/1
-    // we split by underscores, simply for nice lil convinience
     var alphabet:String = 'A-B_C-D_E-H_I-L_M-N_O-R_S_T_U-Z';
     regexLetters = alphabet.split('_');
     regexLetters.insert(0, 'ALL');
     regexLetters.insert(0, 'fav');
     regexLetters.insert(0, '#');
 
-    // the symbols from flash don't have dashes, so we clean this up for use with animations
-    // (we don't need to re-export, rule of thumb is to accomodate files named in flash from dave
-    //    until we get him programming classes (and since i cant find the .fla file....))
     animLetters = regexLetters.map(animLetter -> animLetter.replace('-', ''));
 
     if (letterInd != null)

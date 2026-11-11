@@ -374,6 +374,10 @@ class Note extends FlxSprite
 
 	var _lastNoteOffX:Float = 0;
 	static var _lastValidChecked:String; //optimization
+	static var _skinExistsCache:Map<String, Bool> = new Map<String, Bool>();
+	var _lastDir:Float = 90;
+	var _dirCos:Float = Math.cos(90 * Math.PI / 180);
+	var _dirSin:Float = Math.sin(90 * Math.PI / 180);
 	var _loadedSkin:String; //optimization
 	public var originalHeight:Float = 6;
 	public var correctionOffset:Float = 0; //dont mess with this
@@ -401,7 +405,21 @@ class Note extends FlxSprite
 		var customSkin:String = skin + skinPostfix;
 		var path:String = PlayState.isPixelStage ? 'pixelUI/' : '';
 		
-		if(customSkin == _lastValidChecked || Paths.fileExists('images/' + path + customSkin + '.png', IMAGE))
+		var skinValid:Bool = (customSkin == _lastValidChecked);
+		if(!skinValid)
+		{
+			// disk lookups are cached per mod/path (the old single-string cache thrashed whenever skins alternated)
+			var cacheKey:String = backend.Mods.currentModDirectory + '|' + path + customSkin;
+			var cached:Null<Bool> = _skinExistsCache.get(cacheKey);
+			if(cached == null)
+			{
+				cached = Paths.fileExists('images/' + path + customSkin + '.png', IMAGE);
+				_skinExistsCache.set(cacheKey, cached);
+			}
+			skinValid = cached;
+		}
+
+		if(skinValid)
 		{
 			skin = customSkin;
 			_lastValidChecked = customSkin;
@@ -549,7 +567,14 @@ class Note extends FlxSprite
 		distance = (0.45 * (Conductor.songPosition - strumTime) * songSpeed * multSpeed);
 		if (!myStrum.downScroll) distance *= -1;
 
-		var angleDir = strumDirection * Math.PI / 180;
+		// trig only depends on the strum direction, which almost never changes
+		if (strumDirection != _lastDir)
+		{
+			_lastDir = strumDirection;
+			var rad:Float = strumDirection * Math.PI / 180;
+			_dirCos = Math.cos(rad);
+			_dirSin = Math.sin(rad);
+		}
 		if (copyAngle)
 			angle = strumDirection - 90 + strumAngle + offsetAngle;
 
@@ -557,11 +582,11 @@ class Note extends FlxSprite
 			alpha = strumAlpha * multAlpha;
 
 		if(copyX)
-			x = strumX + offsetX + Math.cos(angleDir) * distance;
+			x = strumX + offsetX + _dirCos * distance;
 
 		if(copyY)
 		{
-			y = strumY + offsetY + correctionOffset + Math.sin(angleDir) * distance;
+			y = strumY + offsetY + correctionOffset + _dirSin * distance;
 			if(myStrum.downScroll && isSustainNote)
 			{
 				if(PlayState.isPixelStage)
@@ -572,9 +597,15 @@ class Note extends FlxSprite
 			}
 		}
 		if(copyScale){
+			// updateHitbox only when the scale actually changed
+			var scaleChanged:Bool = (scale.x != strumScale.x);
 			scale.x = strumScale.x;
-			if(!isSustainNote) scale.y = strumScale.y;
-			updateHitbox();
+			if(!isSustainNote && scale.y != strumScale.y)
+			{
+				scale.y = strumScale.y;
+				scaleChanged = true;
+			}
+			if(scaleChanged) updateHitbox();
 		}
 	}
 
@@ -583,26 +614,36 @@ class Note extends FlxSprite
 		var center:Float = myStrum.y + offsetY + Note.swagWidth / 2;
 		if((mustPress || !ignoreNote) && (wasGoodHit || (prevNote.wasGoodHit && !canBeHit)))
 		{
-			var swagRect:FlxRect = clipRect;
-			if(swagRect == null) swagRect = new FlxRect(0, 0, frameWidth, frameHeight);
+			var cur:FlxRect = clipRect;
+			var rY:Float = (cur != null) ? cur.y : 0;
+			var rW:Float = (cur != null) ? cur.width : frameWidth;
+			var rH:Float = (cur != null) ? cur.height : frameHeight;
 
 			if (myStrum.downScroll)
 			{
 				if(y - offset.y * scale.y + height >= center)
 				{
-					swagRect.width = frameWidth;
-					swagRect.height = (center - y) / scale.y;
-					swagRect.y = frameHeight - swagRect.height;
+					rW = frameWidth;
+					rH = (center - y) / scale.y;
+					rY = frameHeight - rH;
 				}
 			}
 			else if (y + offset.y * scale.y <= center)
 			{
-				swagRect.y = (center - y) / scale.y;
-				swagRect.width = width / scale.x;
-				swagRect.height = (height / scale.y) - swagRect.y;
+				rY = (center - y) / scale.y;
+				rW = width / scale.x;
+				rH = (height / scale.y) - rY;
 			}
-			if (clipRect == null || clipRect.y != swagRect.y || clipRect.height != swagRect.height) {
-				clipRect = swagRect;
+
+			// always re-assign through the setter so the frame gets clipped (flixel needs it)
+			if (cur == null || cur.y != rY || cur.height != rH || cur.width != rW)
+			{
+				if (cur == null) cur = new FlxRect(0, 0, frameWidth, frameHeight);
+				cur.x = 0;
+				cur.y = rY;
+				cur.width = rW;
+				cur.height = rH;
+				clipRect = cur;
 			}
 		}
 	}

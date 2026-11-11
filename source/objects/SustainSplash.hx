@@ -8,6 +8,7 @@ class SustainSplash extends FlxSprite
 	public var strumNote:StrumNote;
 
 	var timer:FlxTimer;
+	var _shaderRef:objects.NoteSplash.PixelSplashShaderRef;
 
 	public function new():Void
 	{
@@ -58,7 +59,9 @@ class SustainSplash extends FlxSprite
 
 		if (daNote.shader != null)
 		{
-			shader = new objects.NoteSplash.PixelSplashShaderRef().shader;
+			// one shader per splash object, reused for every hold (was: a new GLSL shader per hold)
+			if (_shaderRef == null) _shaderRef = new objects.NoteSplash.PixelSplashShaderRef();
+			shader = _shaderRef.shader;
 			shader.data.r.value = daNote.shader.data.r.value;
 			shader.data.g.value = daNote.shader.data.g.value;
 			shader.data.b.value = daNote.shader.data.b.value;

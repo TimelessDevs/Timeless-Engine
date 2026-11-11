@@ -5,7 +5,6 @@ import flixel.util.FlxSignal.FlxTypedSignal;
 import mikolka.compatibility.freeplay.FreeplaySongData;
 import mikolka.funkin.freeplay.FreeplayStyle;
 
-// This is not a sprite group!
 class SongCapsuleGroup extends FlxTypedGroup<SongMenuItem> {
 
     @:allow(mikolka.vslice.freeplay.SongMenuItem)
@@ -51,7 +50,6 @@ class SongCapsuleGroup extends FlxTypedGroup<SongMenuItem> {
     }
 
     public function updateSongDifficulties(currentDifficulty:String) {
-        // Update the song capsules to reflect the new difficulty info.
 			for (songCapsule in members)
 			{
 				if (songCapsule == null)
@@ -60,7 +58,6 @@ class SongCapsuleGroup extends FlxTypedGroup<SongMenuItem> {
 				{
 					songCapsule.songData.currentDifficulty = currentDifficulty;
 					songCapsule.refreshDisplayDifficulty();
-					//songCapsule.checkClip();
 				}
 				else
 				{
@@ -76,7 +73,7 @@ class SongCapsuleGroup extends FlxTypedGroup<SongMenuItem> {
 		
 		for (cap in members)
 		{
-			if(cap.songData == null) continue; // Exclude "Random" card from cleanup
+			if(cap.songData == null) continue;
 			cap.songText.resetText();
 			cap.kill();
 		}
@@ -142,12 +139,23 @@ class SongCapsuleGroup extends FlxTypedGroup<SongMenuItem> {
 	 */
 	function findSongItems(songData:Array<FreeplaySongData>):Map<FreeplaySongData,Null<SongMenuItem>> {
 		var foundSongItem = new Map<FreeplaySongData,Null<SongMenuItem>>();
-		forEachDead(tomb ->{
-			if(songData.contains(tomb.songData) && !foundSongItem.exists(tomb.songData)){
+		// O(1) membership instead of Array.contains per dead capsule (was O(n^2) for big song lists)
+		var wanted = new Map<FreeplaySongData,Bool>();
+		for (s in songData)
+			if (s != null) wanted.set(s, true);
+
+		var i:Int = 0;
+		while (i < members.length)
+		{
+			var tomb:SongMenuItem = members[i++];
+			if (tomb == null || tomb.alive) continue;
+			var sd = tomb.songData;
+			if (sd != null && wanted.exists(sd) && !foundSongItem.exists(sd))
+			{
 				tomb.revive();
-				foundSongItem.set(tomb.songData,tomb);
+				foundSongItem.set(sd, tomb);
 			}
-		});
+		}
 		return foundSongItem;
 	}
 }

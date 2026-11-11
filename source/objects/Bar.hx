@@ -25,6 +25,7 @@ class Bar extends FlxSpriteGroup
 		this.valueFunction = valueFunction;
 		setBounds(boundX, boundY);
 		
+		imageKey = image;
 		bg = new FlxSprite().loadGraphic(Paths.image(image));
 		bg.antialiasing = ClientPrefs.data.antialiasing;
 		barWidth = Std.int(bg.width - 6);
@@ -41,6 +42,26 @@ class Bar extends FlxSpriteGroup
 		add(leftBar);
 		add(rightBar);
 		add(bg);
+		regenerateClips();
+	}
+
+	/** asset key the background was loaded from (used to restore it if the graphic got unloaded) */
+	public var imageKey:String = null;
+
+	/** true when the background graphic was disposed behind our back (clearUnusedMemory etc.) */
+	public function bgBroken():Bool
+		return bg == null || bg.graphic == null || bg.graphic.bitmap == null;
+
+	/** reload the background if its bitmap was unloaded; keeps size / position */
+	public function repairBg():Void
+	{
+		if (imageKey == null || !bgBroken())
+			return;
+		var gfx = Paths.image(imageKey);
+		if (gfx == null)
+			return;
+		bg.loadGraphic(gfx);
+		bg.antialiasing = ClientPrefs.data.antialiasing;
 		regenerateClips();
 	}
 

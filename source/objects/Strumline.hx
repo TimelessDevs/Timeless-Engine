@@ -87,14 +87,18 @@ class Strumline extends FlxTypedGroup<flixel.FlxBasic>
 
 		var fakeCrochet:Float = (60 / PlayState.SONG.bpm) * 1000;
 
-		pState.notes.forEachAlive(function(daNote:Note)
+		var relSpeed:Float = songSpeed / playbackRate;
+		var mem:Array<Note> = pState.notes.members;
+		var i:Int = 0;
+		while (i < mem.length)
 		{
-			if (daNote == null || daNote.mustPress != isPlayer) return;
+			var daNote:Note = mem[i++];
+			if (daNote == null || !daNote.exists || !daNote.alive || daNote.mustPress != isPlayer) continue;
 
 			var strum:StrumNote = strums.members[daNote.noteData];
-			if (strum == null) return;
+			if (strum == null) continue;
 
-			daNote.followStrumNote(strum, fakeCrochet, songSpeed / playbackRate);
+			daNote.followStrumNote(strum, fakeCrochet, relSpeed);
 
 			if (!isPlayer && daNote.wasGoodHit && !daNote.hitByOpponent && !daNote.ignoreNote)
 			{
@@ -117,6 +121,6 @@ class Strumline extends FlxTypedGroup<flixel.FlxBasic>
 				daNote.active = false;
 				@:privateAccess pState.invalidateNote(daNote);
 			}
-		});
+		}
 	}
 }

@@ -4,7 +4,6 @@ import mikolka.funkin.freeplay.FreeplayStyle;
 import flixel.FlxSprite;
 import flixel.group.FlxSpriteGroup.FlxTypedSpriteGroup;
 
-//? Native
 class FreeplayScore extends FlxTypedSpriteGroup<ScoreNum>
 {
   public var scoreShit(default, set):Int = 0;
@@ -13,23 +12,12 @@ class FreeplayScore extends FlxTypedSpriteGroup<ScoreNum>
   {
     if (group == null || group.members == null) return val;
     var loopNum:Int = group.members.length - 1;
-    var dumbNumb = Std.parseInt(Std.string(val));
+    var dumbNumb:Int = val;
     var prevNum:ScoreNum;
 
     while (dumbNumb > 0)
     {
       group.members[loopNum].digit = dumbNumb % 10;
-
-      // var funnyNum = group.members[loopNum];
-      // prevNum = group.members[loopNum + 1];
-
-      // if (prevNum != null)
-      // {
-      // funnyNum.x = prevNum.x - (funnyNum.width * 0.7);
-      // }
-
-      // funnyNum.y = (funnyNum.baseY - (funnyNum.height / 2)) + 73;
-      // funnyNum.x = (funnyNum.baseX - (funnyNum.width / 2)) + 450; // this plus value is hand picked lol!
 
       dumbNumb = Math.floor(dumbNumb / 10);
       loopNum--;

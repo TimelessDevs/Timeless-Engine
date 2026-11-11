@@ -9,16 +9,10 @@ import flixel.util.FlxTimer;
 
 class FreeplayDJ extends FlxAtlasSprite
 {
-  // Represents the sprite's current status.
-  // Without state machines I would have driven myself crazy years ago.
-  // Made this PRIVATE so we can keep track of everything that can alter the state!
-  //   Add a function to this class if you want to edit this value from outside.
   private var currentState:FreeplayDJState = Intro;
 
-  // A callback activated when the intro animation finishes.
   public var onIntroDone:FlxSignal = new FlxSignal();
 
-  // A callback activated when the idle easter egg plays.
   public var onIdleEasterEgg:FlxSignal = new FlxSignal();
 
   var seenIdleEasterEgg:Bool = false;
@@ -26,12 +20,11 @@ class FreeplayDJ extends FlxAtlasSprite
   static final IDLE_EGG_PERIOD:Float = 60.0;
   static final IDLE_CARTOON_PERIOD:Float = 120.0;
 
-  // Time since last special idle animation you.
   var timeIdling:Float = 0;
 
   final playableCharData:PlayerFreeplayDJData;
 
-  public function new(x:Float, y:Float, character:PlayableCharacter)//? don't pull 2 time here. Use result from above instead!
+  public function new(x:Float, y:Float, character:PlayableCharacter)
   {
 
     var playableChar = character;
@@ -357,7 +350,15 @@ class FreeplayDJ extends FlxAtlasSprite
     cartoonSnd.time = FlxG.random.float(0, Math.max(cartoonSnd.length - (5 * Constants.MS_PER_SEC), 0.0));
   }
   //? cartoons are in "assets/shared/sounds"
-  final cartoonList:Array<String> = openfl.utils.Assets.list().filter(function(path) return path.startsWith("assets/shared/sounds/cartoons/"));
+  var _cartoonList:Array<String> = null;
+  // scanning every asset path is slow, so it is only done the first time a cartoon is actually needed
+  var cartoonList(get, never):Array<String>;
+  function get_cartoonList():Array<String>
+  {
+    if (_cartoonList == null)
+      _cartoonList = openfl.utils.Assets.list().filter(function(path) return path.startsWith("assets/shared/sounds/cartoons/"));
+    return _cartoonList;
+  }
 
   function getRandomFlashToon():String
   {

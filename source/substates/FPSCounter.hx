@@ -1,4 +1,4 @@
-package debug;
+package substates;
 
 import flixel.FlxG;
 import openfl.text.TextField;
@@ -6,10 +6,6 @@ import openfl.text.TextFormat;
 import openfl.system.System as OpenFlSystem;
 import lime.system.System as LimeSystem;
 
-/**
-	The FPS class provides an easy-to-use monitor to display
-	the current frame rate of an OpenFL project
-**/
 #if cpp
 #if windows
 @:cppFileCode('#include <windows.h>')
@@ -21,17 +17,21 @@ import lime.system.System as LimeSystem;
 #end
 class FPSCounter extends TextField
 {
-	/**
-		The current frame rate, expressed using frames-per-second
-	**/
 	public var currentFPS(default, null):Int;
 
-	/**
-		The current memory usage (WARNING: this is NOT your total program memory usage, rather it shows the garbage collector memory)
-	**/
 	public var memoryMegas(get, never):Float;
 
-	@:noCompletion private var times:Array<Float>;
+	static inline final RING_SIZE:Int = 4096;
+	static inline final RING_MASK:Int = RING_SIZE - 1;
+	@:noCompletion private var times:haxe.ds.Vector<Float>;
+	@:noCompletion private var ringHead:Int = 0;
+	@:noCompletion private var ringTail:Int = 0;
+	@:noCompletion private var ringCount:Int = 0;
+
+	@:noCompletion private var _memText:String = '';
+	@:noCompletion private var _memTimer:Float = 1000.0;
+	@:noCompletion private var _lastText:String = null;
+	@:noCompletion private var _lastRed:Bool = false;
 
 	public var os:String = '';
 
@@ -56,38 +56,61 @@ class FPSCounter extends TextField
 		multiline = true;
 		text = "FPS: ";
 
-		times = [];
+		times = new haxe.ds.Vector<Float>(RING_SIZE);
 	}
 
 	var deltaTimeout:Float = 0.0;
 
-	// Event Handlers
 	private override function __enterFrame(deltaTime:Float):Void
 	{
 		final now:Float = haxe.Timer.stamp() * 1000;
-		times.push(now);
-		while (times[0] < now - 1000) times.shift();
-		// prevents the overlay from updating every frame, why would you need to anyways @crowplexus
-		if (deltaTimeout < 50) {
-			deltaTimeout += deltaTime;
-			return;
+		times[ringHead] = now;
+		ringHead = (ringHead + 1) & RING_MASK;
+		if (ringCount < RING_SIZE)
+			ringCount++;
+		else
+			ringTail = (ringTail + 1) & RING_MASK;
+		final limit:Float = now - 1000;
+		while (ringCount > 0 && times[ringTail] < limit)
+		{
+			ringTail = (ringTail + 1) & RING_MASK;
+			ringCount--;
 		}
 
-		currentFPS = times.length < FlxG.updateFramerate ? times.length : FlxG.updateFramerate;		
-		updateText();
+		deltaTimeout += deltaTime;
+		_memTimer += deltaTime;
+		if (deltaTimeout < 100)
+			return;
 		deltaTimeout = 0.0;
+
+		if (!visible)
+			return;
+
+		currentFPS = ringCount < FlxG.updateFramerate ? ringCount : FlxG.updateFramerate;
+		updateText();
 	}
 
-	public dynamic function updateText():Void // so people can override it in hscript
+	public dynamic function updateText():Void
 	{
-		text = 
-		'FPS: $currentFPS' + 
-		'\nMemory: ${flixel.util.FlxStringUtil.formatBytes(memoryMegas)}' +
-		os;
+		if (_memTimer >= 500)
+		{
+			_memTimer = 0;
+			_memText = flixel.util.FlxStringUtil.formatBytes(memoryMegas);
+		}
 
-		textColor = 0xFFFFFFFF;
-		if (currentFPS < FlxG.drawFramerate * 0.5)
-			textColor = 0xFFFF0000;
+		final newText:String = 'FPS: $currentFPS' + '\nMemory: $_memText' + os;
+		final red:Bool = currentFPS < FlxG.drawFramerate * 0.5;
+		final changed:Bool = newText != _lastText;
+		if (changed)
+		{
+			_lastText = newText;
+			text = newText;
+		}
+		if (changed || red != _lastRed)
+		{
+			_lastRed = red;
+			textColor = red ? 0xFFFF0000 : 0xFFFFFFFF;
+		}
 	}
 
 	inline function get_memoryMegas():Float

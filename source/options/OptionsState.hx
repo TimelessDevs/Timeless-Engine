@@ -14,7 +14,8 @@ class OptionsState extends MusicBeatState
 		'Graphics',
 		'Visuals',
 		'Gameplay',
-		'T-Slice Options',
+		'T-Engine Options',
+		'P-Slice Options',
 		'V-Slice Options',
 		#if TRANSLATIONS_ALLOWED  'Language', #end
 		#if (TOUCH_CONTROLS_ALLOWED || mobile)'Mobile Options' #end
@@ -56,8 +57,10 @@ class OptionsState extends MusicBeatState
 				openSubState(new options.GameplaySettingsSubState());
 			case 'Adjust Delay and Combo':
 				MusicBeatState.switchState(new options.NoteOffsetState());
-			case 'Timeless Engine Options':
+			case 'T-Engine Engine Options':
 				openSubState(new TimelessSubState());
+			case 'P-Slice Engine Options':
+				openSubState(new PSliceSubState());
 			case 'V-Slice Options':
 				openSubState(new VSliceSubState());
 			#if (TOUCH_CONTROLS_ALLOWED || mobile)

@@ -41,6 +41,12 @@ class NoteSplash extends FlxSprite
 
 	var spawned:Bool = false;
 	var aliveTime:Float = 0;
+	var _finishCb:String->Void;
+	static var _scratchPalette:RGBPalette;
+	static var _defR:FlxColor;
+	static var _defG:FlxColor;
+	static var _defB:FlxColor;
+	static var _defMult:Float = 1;
 	static var buggedKillTime:Float = 0.5;
 	var noteDataMap:Map<Int, String> = new Map();
 
@@ -228,7 +234,20 @@ class NoteSplash extends FlxSprite
 			Note.initializeGlobalRGBShader(noteData % Note.colArray.length);
 			if (inEditor || (note == null || note.noteSplashData.useRGBShader) && (PlayState.SONG == null || !PlayState.SONG.disableNoteRGB))
 			{
-				tempShader = new RGBPalette();
+				// reuse one scratch palette instead of building a new shader object per splash
+				if (_scratchPalette == null)
+				{
+					_scratchPalette = new RGBPalette();
+					_defR = _scratchPalette.r;
+					_defG = _scratchPalette.g;
+					_defB = _scratchPalette.b;
+					_defMult = _scratchPalette.shader.mult.value[0];
+				}
+				tempShader = _scratchPalette;
+				tempShader.r = _defR;
+				tempShader.g = _defG;
+				tempShader.b = _defB;
+				tempShader.shader.mult.value[0] = _defMult;
 				// If Note RGB is enabled:
 				if ((note == null || !note.noteSplashData.useGlobalShader) || inEditor)
 				{
@@ -283,20 +302,21 @@ class NoteSplash extends FlxSprite
 
 		offset.set(10, 10);
 		var conf:NoteSplashAnim = config.animations.get(anim);
-		var offsets:Array<Float> = [0, 0];
-		if (conf != null) offsets = conf.offsets;
+		var offsets:Array<Float> = (conf != null) ? conf.offsets : null;
 		if (offsets != null)
 		{
 			offset.x += offsets[0];
 			offset.y += offsets[1];
 		}
 
-		animation.finishCallback = function(name:String) {
-			visible = false;
-			active = false;
-			spawned = false;
-			kill();
-		}
+		if (_finishCb == null)
+			_finishCb = function(name:String) {
+				visible = false;
+				active = false;
+				spawned = false;
+				kill();
+			};
+		animation.finishCallback = _finishCb;
 
 		alpha = ClientPrefs.data.splashAlpha;
 		if (note != null) alpha = note.noteSplashData.a;

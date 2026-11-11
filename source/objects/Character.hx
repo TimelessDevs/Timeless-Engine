@@ -234,15 +234,14 @@ class Character extends FlxSprite
 			return;
 		}
 
+		refreshAnimFlags();
 		if (PlayState.instance != null && PlayState.instance.camGame != null && !debugMode)
 		{
-			if (!isOnScreen())
+			// singing characters always update, so skip the screen test for them
+			if (!_animIsSing && !isOnScreen())
 			{
-				if (getAnimationName() == null || !getAnimationName().startsWith('sing'))
-				{
-					super.update(elapsed);
-					return;
-				}
+				super.update(elapsed);
+				return;
 			}
 		}
 
@@ -266,13 +265,14 @@ class Character extends FlxSprite
 			specialAnim = false;
 			dance();
 		}
-		else if (getAnimationName().endsWith('miss') && isAnimationFinished())
+		else if (_animIsMiss && isAnimationFinished())
 		{
 			dance();
 			finishAnimation();
 		}
 
-		if (getAnimationName().startsWith('sing')) holdTimer += elapsed;
+		refreshAnimFlags();
+		if (_animIsSing) holdTimer += elapsed;
 		else if(isPlayer) holdTimer = 0;
 
 		if (!isPlayer && holdTimer >= Conductor.stepCrochet * (0.0011 #if FLX_PITCH / (FlxG.sound.music != null ? FlxG.sound.music.pitch : 1) #end) * singDuration)
@@ -281,9 +281,9 @@ class Character extends FlxSprite
 			holdTimer = 0;
 		}
 
-		var name:String = getAnimationName();
-		if(isAnimationFinished() && hasAnimation('$name-loop'))
-			playAnim('$name-loop');
+		refreshAnimFlags();
+		if(isAnimationFinished() && _animLoopName != null && animOffsets.exists(_animLoopName))
+			playAnim(_animLoopName);
 
 		super.update(elapsed);
 	}
@@ -294,6 +294,28 @@ class Character extends FlxSprite
 	}
 
 	var _lastPlayedAnimation:String;
+
+	// per-animation string checks cached (they used to run several times every frame)
+	var _animCacheName:String = null;
+	var _animIsSing:Bool = false;
+	var _animIsMiss:Bool = false;
+	var _animLoopName:String = null;
+	inline function refreshAnimFlags():Void
+	{
+		var n:String = _lastPlayedAnimation;
+		if (n == _animCacheName) return;
+		_animCacheName = n;
+		if (n == null)
+		{
+			_animIsSing = false;
+			_animIsMiss = false;
+			_animLoopName = null;
+			return;
+		}
+		_animIsSing = n.startsWith('sing');
+		_animIsMiss = n.endsWith('miss');
+		_animLoopName = n + '-loop';
+	}
 	inline public function getAnimationName():String
 	{
 		return _lastPlayedAnimation;

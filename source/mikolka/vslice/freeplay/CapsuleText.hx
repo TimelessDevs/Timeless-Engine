@@ -13,7 +13,6 @@ import flixel.util.FlxTimer;
 import flixel.tweens.FlxTween;
 import openfl.display.BlendMode;
 
-//?Native
 class CapsuleText extends FlxSpriteGroup
 {
   public var text(default, set):String;
@@ -27,8 +26,6 @@ class CapsuleText extends FlxSpriteGroup
   var glowColor:FlxColor = 0xFF00ccff;
 
   static var blurShader = null;
-  // 255, 27 normal
-  // 220, 27 favourited
 
   public function new(x:Float, y:Float, songTitle:String, size:Float)
   {
@@ -41,7 +38,6 @@ class CapsuleText extends FlxSpriteGroup
     blurredText = new FlxSprite().loadGraphic(whiteText.graphic);
     if(VsliceOptions.SHADERS && blurShader == null) blurShader = new GaussianBlurShader(1);
     blurredText.shader = blurShader;
-    // whiteText.shader = new GaussianBlurShader(0.3);
     text = songTitle;
 
     blurredText.color = glowColor;
@@ -63,13 +59,8 @@ class CapsuleText extends FlxSpriteGroup
     blurredText.color = glowColor;
     whiteText.textField.filters = [
       new openfl.filters.GlowFilter(glowColor, 1, 5, 5, 210, BitmapFilterQuality.MEDIUM),
-      // new openfl.filters.BlurFilter(5, 5, BitmapFilterQuality.LOW)
     ];
   }
-
-  // ???? none
-  // 255, 27 normal
-  // 220, 27 favourited
 
   function set_clipWidth(value:Int):Int
   {
@@ -78,10 +69,6 @@ class CapsuleText extends FlxSpriteGroup
     return clipWidth = value;
   }
 
-  /**
-   * Checks if the text if it's too long, and clips if it is
-   * @param wid
-   */
   function checkClipWidth(?wid:Int):Void
   {
     if (wid == null) wid = clipWidth;
@@ -119,10 +106,21 @@ class CapsuleText extends FlxSpriteGroup
     if(VsliceOptions.SHADERS)
     whiteText.textField.filters = [
       new openfl.filters.GlowFilter(glowColor, 1, 5, 5, 210, BitmapFilterQuality.MEDIUM),
-      // new openfl.filters.BlurFilter(5, 5, BitmapFilterQuality.LOW)
     ];
 
     return text = value;
+  }
+
+  var _clipRectA:FlxRect = new FlxRect();
+  var _clipRectB:FlxRect = new FlxRect();
+
+  inline function applyScrollClip():Void
+  {
+    _clipRectA.set(whiteText.offset.x, 0, clipWidth, whiteText.height);
+    whiteText.clipRect = _clipRectA;
+    blurredText.offset = whiteText.offset;
+    _clipRectB.set(whiteText.offset.x, 0, clipWidth, blurredText.height);
+    blurredText.clipRect = _clipRectB;
   }
 
   var moveTimer:FlxTimer = new FlxTimer();
@@ -141,9 +139,7 @@ class CapsuleText extends FlxSpriteGroup
     moveTween = FlxTween.tween(whiteText.offset, {x: distToMove}, 2,
       {
         onUpdate: function(_) {
-          whiteText.clipRect = new FlxRect(whiteText.offset.x, 0, clipWidth, whiteText.height);
-          blurredText.offset = whiteText.offset;
-          blurredText.clipRect = new FlxRect(whiteText.offset.x, 0, clipWidth, blurredText.height);
+          applyScrollClip();
         },
         onComplete: function(_) {
           moveTimer.start(0.3, (timer) -> {
@@ -159,9 +155,7 @@ class CapsuleText extends FlxSpriteGroup
     moveTween = FlxTween.tween(whiteText.offset, {x: 0}, 2,
       {
         onUpdate: function(_) {
-          whiteText.clipRect = new FlxRect(whiteText.offset.x, 0, clipWidth, whiteText.height);
-          blurredText.offset = whiteText.offset;
-          blurredText.clipRect = new FlxRect(whiteText.offset.x, 0, clipWidth, blurredText.height);
+          applyScrollClip();
         },
         onComplete: function(_) {
           moveTimer.start(0.3, (timer) -> {
@@ -200,7 +194,6 @@ class CapsuleText extends FlxSpriteGroup
       whiteText.color = 0xFFFFFFFF;
       whiteText.textField.filters = [
         new openfl.filters.GlowFilter(0xFFFFFF, 1, 5, 5, 210, BitmapFilterQuality.MEDIUM),
-        // new openfl.filters.BlurFilter(5, 5, BitmapFilterQuality.LOW)
       ];
     }
     else
@@ -209,7 +202,6 @@ class CapsuleText extends FlxSpriteGroup
       whiteText.color = 0xFFDDDDDD;
       whiteText.textField.filters = [
         new openfl.filters.GlowFilter(0xDDDDDD, 1, 5, 5, 210, BitmapFilterQuality.MEDIUM),
-        // new openfl.filters.BlurFilter(5, 5, BitmapFilterQuality.LOW)
       ];
     }
     flickerState = !flickerState;

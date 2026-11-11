@@ -5,27 +5,27 @@
 	xsi:schemaLocation="http://lime.openfl.org/project/1.0.4 http://lime.openfl.org/xsd/project-1.0.4.xsd">
 	<!-- _________________________ Application Settings _________________________ -->
 
+	<!-- PC build-->
 	<app unless="PROFILE_BUILD || mobile" title="Friday Night Funkin': Timeless Engine"
 		file="TimelessEngine" packageName="com.timeless.timelessengine" package="com.timeless.timelessengine"
-		main="Main" version="1.0.1" company="Timeless Team" />
+		main="Main" version="0.0.6" company="Timeless Team" />
+
+	<!-- test build -->
 	<app if="PROFILE_BUILD" title="Timeless Engine Profiling build" file="TimelessEngine"
 		packageName="com.timeless.testEngine" package="com.timeless.testEngine" main="Main"
-		version="1.0.1" company="Timeless Team" />
+		version="0.0.6" company="Timeless Team" />
+
+	<!-- mobile build-->
 	<app if="mobile" unless="PROFILE_BUILD" title="Timeless Engine" file="TimelessEngine"
 		packageName="com.timeless.timelessengine" package="com.timeless.timelessengine" main="Main"
-		version="1.0.1" company="Timeless Team" />
+		version="0.0.6" company="Timeless Team" />
+
 	<!--Switch
 	Export with Unique ApplicationID and Icon-->
 	<set name="APP_ID" value="0x0100f6c013bbc000" />
 	<meta build-number="101" />
 	<config type="android" gradle-version="8.10.2" gradle-plugin="8.8.0" ndkVersion="27.3"
 	 minimum-sdk-version="26" target-sdk-version="35" requestLegacyExternalStorage="true" />
-	
-	<!-- NOTE TO SELF: DISABLE THIS IF ISSUES ARE FOUND -->
-
-	<android permission="android.permission.READ_EXTERNAL_STORAGE" />
-	<android permission="android.permission.WRITE_EXTERNAL_STORAGE" />
-	<android permission="android.permission.MANAGE_EXTERNAL_STORAGE" />
 
 <!-- NOTE TO SELF: DISABLE THIS IF ISSUES ARE FOUND -->
 	<haxedef name="LINC_LUA_RELATIVE_DYNAMIC_LIB" /> <!-- stable luas PUT AFTER FIRST LINE WITH APP
@@ -185,19 +185,12 @@
 	<assets path="assets/shared/menulayouts" rename="assets/shared/menulayouts" type="text" />
 	<assets path="assets/shared/scripts" rename="assets/shared/scripts" type="text" />
 
-	<assets path="assets/shared/modmenu" rename="assets/shared/images/modsmenu" unless="web" />
-
 	<assets path="assets/embed" if="web" embed="true" />
 	<assets path="assets/embed" unless="web || OPENFL_LOOKUP" embed="false" />
 	<assets path="assets/embed" if="OPENFL_LOOKUP" unless="web" embed="true" />
 
 	<assets path="assets/week_assets" rename="assets" if="web" />
 	<assets path="assets/week_assets" rename="assets" unless="web" />
-
-	<section if="TITLE_SCREEN_EASTER_EGG">
-		<assets path="assets/secrets" rename="assets/shared" exclude="*.ogg" if="web" />
-		<assets path="assets/secrets" rename="assets/shared" unless="web" />
-	</section>
 
 	<section if="TRANSLATIONS_ALLOWED">
 		<assets path="assets/translations" rename="assets" exclude="*.ogg" if="web" />
@@ -243,6 +236,7 @@
 
 	<haxelib name="flixel" />
 	<haxelib name="flixel-addons" />
+	<haxelib name="hscript" />
 	<haxelib name="hscript-improved" />
 	<haxelib name="hxcpp" />
 	<haxelib name="extension-haptics" if="mobile" />
@@ -289,7 +283,7 @@
 		<compilerflag value="-I/hxpy/include" />
 	</target>
 
-	<assets path="python" rename="timepython" if="windows" embed="false" />
+	<assets path="source/timelesspython" rename="python" />
 
 	<!-- Category Type for Apple Systems -->
 	<config:ios category_type="public.app-category.music-games" />
@@ -418,7 +412,7 @@
 
 	<section if="FIREBASE_CRASH_HANDLER">
 		<template path="setup/google-services.json" rename="app/google-services.json"/>
-		<config:android pslice-firebase-sdk-path="yes" />
+		<config:android timeless-firebase-sdk-path="yes" />
 		<template path="setup/GoogleService-Info.plist" rename="GoogleService-Info.plist" if="ios"/>
 		<template path="setup/GoogleService-Info.plist" rename="../GoogleService-Info.plist" if="ios"/>
 	</section>
@@ -432,9 +426,9 @@
 	</section>
 	<section unless="PROFILE_BUILD">
 		<section if="mobile">
-			<config type="android" pslice-mono-icon="art/mobile/iconMono.png" />
+			<config type="android" timeless-mono-icon="art/mobile/iconMono.png" />
 
-			<config type="ios" pslice-icon-dir="art/mobile/PSlice.appiconset" />
+			<config type="ios" timeless-icon-dir="art/mobile/IOS" />
 			<icon path="art/mobile/iconAdaptive.png" if="android" />
 			<icon path="art/mobile/iconMobile.png" unless="android" />
 		</section>
